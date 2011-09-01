@@ -1,3 +1,23 @@
+/*
+A simple implementation of first-order terms. 
+Copyright 2010-2011 Adam Pease, apease@articulatesoftware.com
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program ; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+MA  02111-1307 USA 
+*/
+
 package atp;
 
 import com.articulate.sigma.*;
@@ -99,98 +119,196 @@ public class Parser {
                 ex.printStackTrace();
             }
             return null;
+        }  
+        
+        /** ***************************************************************
+         * Check if the term is a variable. This assumes that t is a
+         * well-formed term.
+         */
+        public boolean termIsVar() {
+           
+            return Character.isUpperCase(t.charAt(0));
+        }
+        
+        /** ***************************************************************
+         * Check if the term is a compound term. This assumes that t is a
+         * well-formed term.
+         */
+        public boolean termIsCompound() {
+
+            return !termIsVar();
+        }
+        
+        /** ***************************************************************
+         * Return True if term has no variables, False otherwise
+         */
+        public boolean termIsGround() { 
+            
+            if (!StringUtil.emptyString(t) && Character.isUpperCase(t.charAt(0)))
+                return false;
+            for (int i = 0; i < subterms.size(); i++)
+                if (!subterms.get(i).termIsGround())
+                    return false;
+            return true;
+        }
+        
+        /** ***************************************************************
+         * Return the weight of the term,  counting fweight for each function symbol
+         * occurrence, vweight for each variable occurrence. Examples: 
+            #                  termWeight(f(a,b), 1, 1) = 3
+            #                  termWeight(f(a,b), 2, 1) = 6
+            #                  termWeight(f(X,Y), 2, 1) = 4
+            #                  termWeight(X, 2, 1)      = 1
+            #                  termWeight(g(a), 3, 1)   = 6
+         */
+        public int termWeight(int fweight, int vweight) {
+            
+            int total = 0;
+            if (Character.isUpperCase(t.charAt(0)))
+                total = vweight;
+            else
+                total = fweight;
+            for (int i = 0; i < subterms.size(); i++)
+                total = total + subterms.get(i).termWeight(fweight,vweight);
+            return total;
+        }
+        
+        /** ***************************************************************
+         *Return the subterm of t at position pos (or None if pos is not a 
+         * position in term). pos is a list of integers denoting branches, e.g.
+        #                  subterm(f(a,b), [])        = f(a,b)
+        #                  subterm(f(a,g(b)), [0])    = a
+        #                  subterm(f(a,g(b)), [1])    = g(b)
+        #                  subterm(f(a,g(b)), [1,0])  = b
+        #                  subterm(f(a,g(b)), [3,0])  = None
+         */
+        public Term subterm(ArrayList<Integer> pos) {
+            
+            if (pos.size() == 0)
+                return this;
+            int index = pos.remove(pos.size()-1).intValue();
+            if (index >= subterms.size())
+                return null;
+            if (pos.size() == 0)
+                return subterms.get(index);
+            else
+                return subterms.get(index).subterm(pos);
+        }
+        
+        /** ***************************************************************
+         */
+        public boolean equals(Term other) {
+            
+            if (!other.t.equals(t))
+                return false;
+            if (other.subterms.size() != subterms.size())
+                return false;
+            for (int i = 0; i < subterms.size(); i++)
+                if (!subterms.get(i).equals(other.subterms.get(i)))
+                    return false;
+            return true;
+        }
+        
+        /** ***************************************************************
+         */
+        public Term termCopy() {
+            
+            Term result = new Term();
+            result.t = t;
+            for (int i = 0; i < subterms.size(); i++)
+                result.subterms.add(subterms.get(i).termCopy());
+            return result;
+        }
+	}
+	
+   /** ***************************************************************
+    * atom - predicate symbol with term arguments
+    * literal - atom or negated atom
+     */
+    public class Literal {
+        
+        public String t = "";  // lowercase is a constant, uppercase is a variable
+        public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not composite
+        public boolean negated = false;
+        
+        public String toString() {
+                
+            StringBuffer result = new StringBuffer();
+            if (negated)
+                result.append('-');
+            result.append(t);
+            if (subterms.size() > 0) {
+                for (int i = 0; i < subterms.size(); i++) {
+                    result.append(subterms.get(i).toString());
+                    if (i < subterms.size()-1)
+                        result.append(", ");
+                }    
+            }
+            return result.toString();
+        }
+        
+        /** ***************************************************************
+         */
+        public Parser.Literal parse(StreamTokenizer_s st) {
+                   
+            try {
+                //System.out.println("Entering: " + this);
+                String errStr = ""; 
+                String pred = "";
+                Parser.Term newT = new Term();
+                do {
+                    st.nextToken();  
+                    //System.out.println(st.ttype + " " + st.sval);
+                    switch (st.ttype) {
+                        case StreamTokenizer.TT_WORD :
+                            /* if (StringUtil.emptyString(t)) {
+                                System.out.println("adding " + t + " to self");
+                                t = st.sval;
+                            }
+                            else { */                                
+                                t = st.sval;
+                                //System.out.println("adding " + t + " to self");
+                                //System.out.println("adding " + newT.t + " to newT");
+                            //}
+                            break;
+                        case StreamTokenizer.TT_EOL :  
+                            startLine++;
+                            break;
+                        case StreamTokenizer.TT_EOF :  
+                            return this;                         
+                        case ',':  // 44
+                            subterms.add(newT);
+                            //System.out.println("hit comma, newT: " + newT);
+                            newT = new Term();
+                            break;
+                        case '-': 
+                            negated = true;
+                            //System.out.println("hit negation, newT: " + this);
+                            break;
+                        case '(':  // 40
+                            //System.out.println("descending: " + newT);
+                            newT.parse(st);
+                            subterms.add(newT);
+                            //System.out.println("returning from descent: " + newT);
+                            break;
+                        case ')':  // 41
+                            subterms.add(newT);
+                            //System.out.println("returning: " + this);
+                            return this;
+                    }
+                } while (st.ttype != StreamTokenizer.TT_EOF);
+            }
+            catch (Exception ex) {
+                System.out.println("Error in Term.parse(): " + ex.getMessage());
+                System.out.println("Error in Term.parse(): token:" + st.ttype);
+                if (st.ttype == StreamTokenizer.TT_WORD)
+                    System.out.println("Error in Term.parse(): token:" + st.ttype);            
+                ex.printStackTrace();
+            }
+            return null;
         }    
 
-	}
-	   /** ***************************************************************
-	    * atom - predicate symbol with term arguments
-	    * literal - atom or negated atom
-	     */
-	    public class Literal {
-	        
-	        public String t = "";  // lowercase is a constant, uppercase is a variable
-	        public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not composite
-	        public boolean negated = false;
-	        
-	        public String toString() {
-	                
-	            StringBuffer result = new StringBuffer();
-	            if (negated)
-	                result.append('-');
-	            result.append(t);
-	            if (subterms.size() > 0) {
-	                result.append('(');
-	                for (int i = 0; i < subterms.size(); i++) {
-	                    result.append(subterms.get(i).toString());
-	                    if (i < subterms.size()-1)
-	                        result.append(", ");
-	                }
-	                result.append(')');     
-	            }
-	            return result.toString();
-	        }
-	        
-	        /** ***************************************************************
-	         */
-	        public Parser.Term parse(StreamTokenizer_s st) {
-	                   
-	            try {
-	                //System.out.println("Entering: " + this);
-	                String errStr = ""; 
-	                String pred = "";
-	                Parser.Term newT = new Term();
-	                do {
-	                    st.nextToken();  
-	                    //System.out.println(st.ttype + " " + st.sval);
-	                    switch (st.ttype) {
-	                        case StreamTokenizer.TT_WORD :
-	                            /* if (StringUtil.emptyString(t)) {
-	                                System.out.println("adding " + t + " to self");
-	                                t = st.sval;
-	                            }
-	                            else { */                                
-	                                newT.t = st.sval;
-	                                //System.out.println("adding " + newT.t + " to newT");
-	                            //}
-	                            break;
-	                        case StreamTokenizer.TT_EOL :  
-	                            startLine++;
-	                            break;
-	                        case StreamTokenizer.TT_EOF :  
-	                            return newT;                         
-	                        case ',':  // 44
-	                            subterms.add(newT);
-	                            //System.out.println("hit comma, newT: " + newT);
-	                            newT = new Term();
-	                            break;
-	                        case '-': 
-	                            negated = true;
-	                            //System.out.println("hit comma, newT: " + newT);
-	                            break;
-	                        case '(':  // 40
-	                            //System.out.println("descending: " + newT);
-	                            newT.parse(st);
-	                            //subterms.add(newT);
-	                            //System.out.println("returning from descent: " + newT);
-	                            break;
-	                        case ')':  // 41
-	                            subterms.add(newT);
-	                            //System.out.println("returning: " + newT);
-	                            return this;
-	                    }
-	                } while (st.ttype != StreamTokenizer.TT_EOF);
-	            }
-	            catch (Exception ex) {
-	                System.out.println("Error in Term.parse(): " + ex.getMessage());
-	                System.out.println("Error in Term.parse(): token:" + st.ttype);
-	                if (st.ttype == StreamTokenizer.TT_WORD)
-	                    System.out.println("Error in Term.parse(): token:" + st.ttype);            
-	                ex.printStackTrace();
-	            }
-	            return null;
-	        }    
-
-	    }
+    }
 	    
 	/** ***************************************************************
 	 * formula - literal or compound formula
@@ -273,8 +391,7 @@ public class Parser {
 	                            else {
 	                                inLiteral = true;
 	                                Term t = new Term();
-	                                t.t = st.sval;
-	                                l.t.add(t);
+	                                lit.t = st.sval;
 	                            }
 	                        }
 	                            
@@ -323,32 +440,160 @@ public class Parser {
 	    }
 	}
     
+	/** ***************************************************************
+     * Set up test content.  
+     */
+	String example1 = "X";
+	String example2 = "a";
+	String example3 = "g(a,b)";
+	String example4 = "g(X, f(Y))";     
+	String example5 = "g(X, f(Y))";    
+    String example6 = "f(X,g(a,b))";    
+    String example7 = "-g(a,b)";    
+
+	Term t1 = null;
+	Term t2 = null;
+	Term t3 = null;
+	Term t4 = null;
+	Term t5 = null;
+	Term t6 = null;
+	
+    /** ***************************************************************
+     * Set up test content.  
+     */
+	public void setupTests() {
+	    
+	    Parser p = new Parser();
+	    Term t = new Term();
+	    t1 = t.parse(new StreamTokenizer_s(new StringReader(example1)));
+	    t2 = t.parse(new StreamTokenizer_s(new StringReader(example2)));
+	    t3 = t.parse(new StreamTokenizer_s(new StringReader(example3)));
+	    t4 = t.parse(new StreamTokenizer_s(new StringReader(example4)));
+	    t5 = t.parse(new StreamTokenizer_s(new StringReader(example5)));
+	    t6 = t.parse(new StreamTokenizer_s(new StringReader(example6)));
+	}
+	
+	/** ***************************************************************
+     * Test that parse() is working properly   
+     */
+    public void parseTest() {
+        
+        System.out.println("---------------------");
+        System.out.println("INFO in parseTest()");
+        System.out.println(t1 + " = " + example1);
+        System.out.println(t2 + " = " + example2);
+        System.out.println(t3 + " = " + example3);
+        System.out.println(t4 + " = " + example4);
+        System.out.println(t5 + " = " + example5);
+        System.out.println(t6 + " = " + example6);
+    }
+    
+    /** ***************************************************************
+     * Test that parse() and toString() are dual. Start with terms, 
+     * so that we are sure to get the canonical string representation.   
+     */
+    public void testToString() {
+
+        System.out.println("---------------------");
+        System.out.println("INFO in Parser.testToString(): all should be true");
+        Term t = new Term();
+        t = t.parse(new StreamTokenizer_s(new StringReader(t1.toString())));
+        System.out.println(t1.toString().equals(t.toString()));
+        t = t.parse(new StreamTokenizer_s(new StringReader(t2.toString())));
+        System.out.println(t2.toString().equals(t.toString()));
+        t = t.parse(new StreamTokenizer_s(new StringReader(t3.toString())));
+        System.out.println(t3.toString().equals(t.toString()));
+        t = t.parse(new StreamTokenizer_s(new StringReader(t4.toString())));
+        System.out.println(t4.toString().equals(t.toString()));
+        t = t.parse(new StreamTokenizer_s(new StringReader(t5.toString())));
+        System.out.println(t5.toString().equals(t.toString()));
+        t = t.parse(new StreamTokenizer_s(new StringReader(t6.toString())));
+        System.out.println(t6.toString().equals(t.toString()));
+    }
+    
+    /** ***************************************************************
+     * Test if the classification function works as expected.  
+     */
+    public void testIsVar() {
+
+        System.out.println("---------------------");
+        System.out.println("INFO in testIsVar(): first true, rest false");
+        System.out.println(t1.termIsVar());
+        System.out.println(t2.termIsVar());
+        System.out.println(t3.termIsVar());
+        System.out.println(t4.termIsVar());
+        System.out.println(t5.termIsVar());
+        System.out.println(t6.termIsVar());
+    }
+    
+    /** ***************************************************************
+     * Test if the classification function works as expected.  
+     */
+    public void testIsCompound() {
+        
+        System.out.println("---------------------");
+        System.out.println("INFO in testIsCompound(): first false, rest true");
+        System.out.println(t1.termIsCompound());
+        System.out.println(t2.termIsCompound());
+        System.out.println(t3.termIsCompound());
+        System.out.println(t4.termIsCompound());
+        System.out.println(t5.termIsCompound());
+        System.out.println(t6.termIsCompound());
+    }
+    
+    /** ***************************************************************
+     * Test if term equality works as expected.
+     */
+    public void testEquality() {
+        
+        System.out.println("---------------------");
+        System.out.println("INFO in testEquality(): first ones true, last two false");
+        System.out.println(t1.equals(t1));
+        System.out.println(t2.equals(t2));
+        System.out.println(t3.equals(t3));
+        System.out.println(t4.equals(t4));
+        System.out.println(t5.equals(t5));
+        System.out.println(t6.equals(t6));
+        System.out.println(t4.equals(t5));
+        System.out.println(t1.equals(t4));
+        System.out.println(t3.equals(t4));
+    }
+    
+    /** ***************************************************************
+     * Test if term copying works. 
+     */
+    public void testCopy() {
+
+        System.out.println("---------------------");
+        System.out.println("INFO in testCopy(): all true");
+        Term t = new Term();
+        t = t1.termCopy();
+        System.out.println(t.equals(t1));
+        t = t2.termCopy();
+        System.out.println(t.equals(t2));
+        t = t3.termCopy();
+        System.out.println(t.equals(t3));
+        t = t4.termCopy();
+        System.out.println(t.equals(t4));
+        t = t5.termCopy();
+        System.out.println(t.equals(t5));
+        t = t6.termCopy();
+        System.out.println(t.equals(t6));
+    }
+    
     /** ***************************************************************
      * Test method for this class.  
      */
     public static void main(String[] args) {
         
         Parser p = new Parser();
-        Parser.Term t = p.new Term();
-        Parser.Term newT = t.parse(new StreamTokenizer_s(new StringReader("f(X,g(a,b))")));
-        System.out.println("result: " + newT);
-        System.out.println("--------------");
-        t = p.new Term();
-        newT = t.parse(new StreamTokenizer_s(new StringReader("X")));
-        System.out.println("result: " + newT);
-        System.out.println("--------------");
-        t = p.new Term();
-        newT = t.parse(new StreamTokenizer_s(new StringReader("g(X, f(Y))")));
-        System.out.println("result: " + newT);
-        System.out.println("--------------");
-        t = p.new Term();
-        newT = t.parse(new StreamTokenizer_s(new StringReader("g(a,b)")));
-        System.out.println("result: " + newT);
-        System.out.println("--------------");
-        Parser.Term l = p.new Term();
-        l = l.parse(new StreamTokenizer_s(new StringReader("-g(a,b)")));
-        System.out.println("result: " + newT);
-        System.out.println("--------------");                
+        p.setupTests();
+        p.parseTest();
+        p.testToString();
+        p.testIsVar();
+        p.testIsCompound();
+        p.testEquality();
+        p.testCopy();
     }
         
 }
