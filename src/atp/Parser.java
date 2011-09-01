@@ -155,11 +155,11 @@ public class Parser {
         /** ***************************************************************
          * Return the weight of the term,  counting fweight for each function symbol
          * occurrence, vweight for each variable occurrence. Examples: 
-            #                  termWeight(f(a,b), 1, 1) = 3
-            #                  termWeight(f(a,b), 2, 1) = 6
-            #                  termWeight(f(X,Y), 2, 1) = 4
-            #                  termWeight(X, 2, 1)      = 1
-            #                  termWeight(g(a), 3, 1)   = 6
+         *                  termWeight(f(a,b), 1, 1) = 3
+         *                  termWeight(f(a,b), 2, 1) = 6
+         *                  termWeight(f(X,Y), 2, 1) = 4
+         *                  termWeight(X, 2, 1)      = 1
+         *                  termWeight(g(a), 3, 1)   = 6
          */
         public int termWeight(int fweight, int vweight) {
             
@@ -174,19 +174,20 @@ public class Parser {
         }
         
         /** ***************************************************************
-         *Return the subterm of t at position pos (or None if pos is not a 
+         * Return the subterm of t at position pos (or None if pos is not a 
          * position in term). pos is a list of integers denoting branches, e.g.
-        #                  subterm(f(a,b), [])        = f(a,b)
-        #                  subterm(f(a,g(b)), [0])    = a
-        #                  subterm(f(a,g(b)), [1])    = g(b)
-        #                  subterm(f(a,g(b)), [1,0])  = b
-        #                  subterm(f(a,g(b)), [3,0])  = None
+         *                 subterm(f(a,b), [])        = f(a,b)
+         *                 subterm(f(a,g(b)), [0])    = a
+         *                 subterm(f(a,g(b)), [1])    = g(b)
+         *                 subterm(f(a,g(b)), [1,0])  = b
+         *                 subterm(f(a,g(b)), [3,0])  = None
+         * Note that pos will be destroyed.
          */
         public Term subterm(ArrayList<Integer> pos) {
-            
+                        
             if (pos.size() == 0)
                 return this;
-            int index = pos.remove(pos.size()-1).intValue();
+            int index = pos.remove(0).intValue();
             if (index >= subterms.size())
                 return null;
             if (pos.size() == 0)
@@ -582,6 +583,43 @@ public class Parser {
     }
     
     /** ***************************************************************
+     * Test term weight function
+     */
+    public void testTermWeight() {
+
+        System.out.println("---------------------");
+        System.out.println("INFO in testTermWeight()");
+        System.out.println("Expected: 3 actual: " + t3.termWeight(1,1));
+        System.out.println("Expected: 6 actual: " + t3.termWeight(2,1));
+        System.out.println("Expected: 1 actual: " + t1.termWeight(2,1));
+    }
+    
+    /** ***************************************************************
+     * Test subterm function
+     */
+    public void testSubTerm() {
+
+        // t6 = "f(X,g(a,b))";
+        System.out.println("---------------------");
+        System.out.println("INFO in testSubTerm()");
+        ArrayList<Integer> al = new ArrayList<Integer>();
+        System.out.println("Expected: f(X,g(a,b)) actual: " + t6.subterm(al));
+        al.add(new Integer(0));
+        System.out.println("Expected: X actual: " + t6.subterm(al));
+        al = new ArrayList<Integer>();
+        al.add(new Integer(1));
+        System.out.println("Expected: g(a,b) actual: " + t6.subterm(al));
+        al = new ArrayList<Integer>();
+        al.add(new Integer(1));
+        al.add(new Integer(0));
+        System.out.println("Expected: a actual: " + t6.subterm(al));
+        al = new ArrayList<Integer>();
+        al.add(new Integer(3));
+        al.add(new Integer(0));
+        System.out.println("Expected: null actual: " + t6.subterm(al));
+    }
+
+    /** ***************************************************************
      * Test method for this class.  
      */
     public static void main(String[] args) {
@@ -594,6 +632,8 @@ public class Parser {
         p.testIsCompound();
         p.testEquality();
         p.testCopy();
+        p.testTermWeight();
+        p.testSubTerm();
     }
         
 }
