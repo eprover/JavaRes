@@ -40,7 +40,7 @@ package atp;
 import java.io.StringReader;
 import java.util.*;
 
-import atp.Parser.Term;
+import atp.Term;
 
 import com.articulate.sigma.StreamTokenizer_s;
 
@@ -51,7 +51,7 @@ public class Substitutions {
     /** ***************************************************************
      * Return a print representation of the substitution.
      */    
-    public String toString() {
+    @Override public String toString() {
 
         StringBuffer result = new StringBuffer();
         result.append("{");
@@ -63,6 +63,7 @@ public class Substitutions {
             if (it.hasNext())
                 result.append(",");
         }
+        result.append("}");
         return result.toString();
     }
 
@@ -78,19 +79,28 @@ public class Substitutions {
             Term value = subst.get(key);
             result.subst.put(key.termCopy(),value.termCopy());
         }
-        return null;
+        return result;
     }
     
     /** ***************************************************************
-     * Return a copy of the substitution.
+     * Return whether two substitutions are equal.
      */    
-    public boolean equals(Substitutions s2) {
+    @Override public boolean equals(Object s2_obj) {
 
+        Substitutions s2 = (Substitutions) s2_obj;
         if (subst.keySet().size() != s2.subst.keySet().size())
             return false;
+        //System.out.println("INFO in Substitutions.equals(): keySet size : " + subst.keySet().size());        
+        //System.out.println("INFO in Substitutions.equals(): this : " + this + " other: " + s2);
+        //System.out.println("INFO in Substitutions.equals(): this keys: " + this.subst.keySet() + 
+        //        " other keys: " + s2.subst.keySet()); 
         Iterator<Term> it = subst.keySet().iterator();
         while (it.hasNext()) {
             Term key = it.next();
+            //System.out.println("INFO in Substitutions.equals(): key " + key + 
+            //        " value: " + subst.get(key) + " other value: " + s2.subst.get(key));
+            if (!s2.subst.containsKey(key))
+                return false;
             if (!subst.get(key).equals(s2.subst.get(key)))
                 return false;
         }
@@ -100,39 +110,22 @@ public class Substitutions {
     /** ***************************************************************
      * Apply the substitution to a term. Return the result.
      */    
-    public Parser.Term apply(Parser.Term term) {
-        
-        Parser p = new Parser();
-        Term res = p.new Term();
+    public Term apply(Term term) {
+                
+        Term res = new Term();
         if (term.termIsVar()) {
-            res = subst.get(term);
-            return res;
+            if (subst.containsKey(term))
+                res.t = subst.get(term).t;
+            else
+                res.t = term.t;
         }
         else {
             res.t = term.t;
             for (int i = 0; i < term.subterms.size(); i++)
                 res.subterms.add(apply(term.subterms.get(i)));
             return res;
-        }
-    }
-    
-    /** ***************************************************************
-     * Apply the substitution to a term. Return the result.
-     */    
-    public Parser.Term applyBinding(Term var, Term term) {
-         
-        Parser p = new Parser();
-        Term res = p.new Term();
-        if (term.termIsVar()) {
-            res.t = subst.get(term).t;
-            return res;
-        }
-        else {
-            res.t = term.t;
-            for (int i = 0; i < term.subterms.size(); i++)
-                res.subterms.add(apply(term.subterms.get(i)));
-            return res;
-        }
+        }       
+        return res;
     }
     
     /** ***************************************************************
@@ -180,7 +173,7 @@ public class Substitutions {
     public void setupTests() {
         
         Parser p = new Parser();
-        Term t = p.new Term();
+        Term t = new Term();
         t1 = t.parse(new StreamTokenizer_s(new StringReader(example1)));
         t2 = t.parse(new StreamTokenizer_s(new StringReader(example2)));
         t3 = t.parse(new StreamTokenizer_s(new StringReader(example3)));
@@ -188,17 +181,11 @@ public class Substitutions {
         t5 = t.parse(new StreamTokenizer_s(new StringReader(example5)));
         t6 = t.parse(new StreamTokenizer_s(new StringReader(example6)));
         t7 = t.parse(new StreamTokenizer_s(new StringReader(example7)));
-    }
-    
-    /** ***************************************************************
-     * Set up test content.  
-     */
-    public static void testEquality() {
-        
-        s1.subst.put(t6,t2);
-        s1.subst.put(t6,t2);
-        s2.subst.put(t6,t2);
-        s2.subst.put(t6,t3);
+        t8 = t.parse(new StreamTokenizer_s(new StringReader(example8)));
+        s1.subst.put(t6,t2);   // X->a
+        s1.subst.put(t7,t2);   // Y->a
+        s2.subst.put(t6,t2);   // X->a
+        s2.subst.put(t7,t3);   // Y->b
     }
     
     /** ***************************************************************
@@ -209,6 +196,7 @@ public class Substitutions {
         System.out.println("---------------------");
         System.out.println("INFO in testSubstBasic()");
         Substitutions tau = s1.copy();
+        System.out.println("should be true: " + s1 + " equals " + tau + " " + s1.equals(tau));
         System.out.println("should be true.  Value: " + tau.apply(t6).equals(s1.apply(t6)));        
         System.out.println("should be true.  Value: " + tau.apply(t7).equals(s1.apply(t7)));        
         System.out.println("should be true.  Value: " + tau.apply(t8).equals(s1.apply(t8)));
@@ -221,9 +209,18 @@ public class Substitutions {
         
         System.out.println("---------------------");
         System.out.println("INFO in testSubstApply()");
-        System.out.println("should be same: " + s1.apply(t1).toString() + " and " + example4);
         System.out.println("should be true: " + s1.apply(t1).equals(t4));
-        System.out.println("should be true: " + s1.apply(t1).equals(t5));
+        System.out.println("should be true: " + s2.apply(t1).equals(t5));
     }
 
+    /** ***************************************************************
+     * Test method for this class.  
+     */
+    public static void main(String[] args) {
+        
+        Substitutions s = new Substitutions();
+        s.setupTests();
+        s.testSubstBasic();
+        s.testSubstApply();
+    }
 }
