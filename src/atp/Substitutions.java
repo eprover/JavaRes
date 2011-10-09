@@ -155,14 +155,14 @@ public class Substitutions {
     static String example7 = "Y"; 
     static String example8 = "Z"; 
     
-    static Term t1 = null;
-    static Term t2 = null;
-    static Term t3 = null;
-    static Term t4 = null;
-    static Term t5 = null;
-    static Term t6 = null;
-    static Term t7 = null;
-    static Term t8 = null;    
+    static Term t1 = new Term();
+    static Term t2 = new Term();
+    static Term t3 = new Term();
+    static Term t4 = new Term();
+    static Term t5 = new Term();
+    static Term t6 = new Term();
+    static Term t7 = new Term();
+    static Term t8 = new Term();    
     
     static Substitutions s1 = new Substitutions();
     static Substitutions s2 = new Substitutions();
@@ -174,14 +174,14 @@ public class Substitutions {
         
         Parser p = new Parser();
         Term t = new Term();
-        t1 = t.parse(new StreamTokenizer_s(new StringReader(example1)));
-        t2 = t.parse(new StreamTokenizer_s(new StringReader(example2)));
-        t3 = t.parse(new StreamTokenizer_s(new StringReader(example3)));
-        t4 = t.parse(new StreamTokenizer_s(new StringReader(example4)));
-        t5 = t.parse(new StreamTokenizer_s(new StringReader(example5)));
-        t6 = t.parse(new StreamTokenizer_s(new StringReader(example6)));
-        t7 = t.parse(new StreamTokenizer_s(new StringReader(example7)));
-        t8 = t.parse(new StreamTokenizer_s(new StringReader(example8)));
+        t1 = t1.parse(new StreamTokenizer_s(new StringReader(example1)));
+        t2 = t2.parse(new StreamTokenizer_s(new StringReader(example2)));
+        t3 = t3.parse(new StreamTokenizer_s(new StringReader(example3)));
+        t4 = t4.parse(new StreamTokenizer_s(new StringReader(example4)));
+        t5 = t5.parse(new StreamTokenizer_s(new StringReader(example5)));
+        t6 = t6.parse(new StreamTokenizer_s(new StringReader(example6)));
+        t7 = t7.parse(new StreamTokenizer_s(new StringReader(example7)));
+        t8 = t8.parse(new StreamTokenizer_s(new StringReader(example8)));
         s1.subst.put(t6,t2);   // X->a
         s1.subst.put(t7,t2);   // Y->a
         s2.subst.put(t6,t2);   // X->a
@@ -209,7 +209,11 @@ public class Substitutions {
         
         System.out.println("---------------------");
         System.out.println("INFO in testSubstApply()");
+        System.out.println(s1 + " -> " + t1 + " = " + s1.apply(t1));
+        System.out.println(t4);
         System.out.println("should be true: " + s1.apply(t1).equals(t4));
+        System.out.println(s2 + " -> " + t1 + " = " + s2.apply(t1));
+        System.out.println(t5);
         System.out.println("should be true: " + s2.apply(t1).equals(t5));
     }
 
