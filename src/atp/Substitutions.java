@@ -47,6 +47,7 @@ import com.articulate.sigma.StreamTokenizer_s;
 public class Substitutions {
 
     public HashMap<Term,Term> subst = new HashMap<Term,Term>();
+    private static int freshVarCounter = 0;
     
     /** ***************************************************************
      * Return a print representation of the substitution.
@@ -80,6 +81,12 @@ public class Substitutions {
             result.subst.put(key.termCopy(),value.termCopy());
         }
         return result;
+    }
+
+    /** ***************************************************************
+     */ 
+    public void addSubst(Term t1, Term t2) {
+        subst.put(t1,t2);
     }
     
     /** ***************************************************************
@@ -115,7 +122,7 @@ public class Substitutions {
         Term res = new Term();
         if (term.termIsVar()) {
             if (subst.containsKey(term))
-                res.t = subst.get(term).t;
+                res = subst.get(term);
             else
                 res.t = term.t;
         }
@@ -125,6 +132,17 @@ public class Substitutions {
                 res.subterms.add(apply(term.subterms.get(i)));
             return res;
         }       
+        return res;
+    }
+    
+    /** ***************************************************************
+     * Apply the substitution to a list. Return the result.
+     */    
+    public ArrayList<Term> applyList(ArrayList<Term> l) {
+                
+        ArrayList<Term> res = new ArrayList<Term>();
+        for (int i = 0; i < l.size(); i++)
+            res.add(apply(l.get(i)));
         return res;
     }
     
@@ -142,8 +160,38 @@ public class Substitutions {
         if (!subst.containsKey(var))
             subst.put(var,term);        
     }
-
+    
     /** ***************************************************************
+     * Return a fresh variable. Note that this is not guaranteed to be
+     * different from input variables. However, it is guaranteed that
+     * freshVar() will never return the same variable more than once.
+     */    
+    private static String freshVar() {
+
+        Substitutions.freshVarCounter = Substitutions.freshVarCounter + 1;
+        return "X" + Integer.toString(Substitutions.freshVarCounter);
+    }
+    
+    /** ***************************************************************
+     * Create a substitution that maps all variables in var to fresh
+     * variables. Note that there is no guarantee that the fresh
+     * variables have never been used. However, there is a a guarantee
+     * that the fresh variables have never been produced by a uniqSubst
+     * substitution.
+     */    
+    public static Substitutions freshVarSubst(ArrayList<Term> vars) {
+
+        Substitutions s = new Substitutions();
+        for (int i = 0; i < vars.size(); i++) {
+            Term newVar = new Term();
+            newVar.t = freshVar();
+            s.subst.put(vars.get(i),newVar);
+        }
+        return s;
+    }
+    
+    /** ***************************************************************
+     * ************ UNIT TESTS *****************
      * Set up test content.  
      */
     static String example1 = "f(X, g(Y))";
@@ -153,19 +201,22 @@ public class Substitutions {
     static String example5 = "f(a, g(b))";    
     static String example6 = "X"; 
     static String example7 = "Y"; 
-    static String example8 = "Z"; 
+    static String example8 = "Z";
+    static String example9 = "f(M)"; 
     
-    static Term t1 = new Term();
-    static Term t2 = new Term();
-    static Term t3 = new Term();
-    static Term t4 = new Term();
-    static Term t5 = new Term();
-    static Term t6 = new Term();
-    static Term t7 = new Term();
-    static Term t8 = new Term();    
+    static Term t1 = null;
+    static Term t2 = null;
+    static Term t3 = null;
+    static Term t4 = null;
+    static Term t5 = null;
+    static Term t6 = null;
+    static Term t7 = null;
+    static Term t8 = null;    
+    static Term t9 = null; 
     
     static Substitutions s1 = new Substitutions();
     static Substitutions s2 = new Substitutions();
+    static Substitutions s3 = new Substitutions();
     
     /** ***************************************************************
      * Set up test content.  
@@ -174,18 +225,20 @@ public class Substitutions {
         
         Parser p = new Parser();
         Term t = new Term();
-        t1 = t1.parse(new StreamTokenizer_s(new StringReader(example1)));
-        t2 = t2.parse(new StreamTokenizer_s(new StringReader(example2)));
-        t3 = t3.parse(new StreamTokenizer_s(new StringReader(example3)));
-        t4 = t4.parse(new StreamTokenizer_s(new StringReader(example4)));
-        t5 = t5.parse(new StreamTokenizer_s(new StringReader(example5)));
-        t6 = t6.parse(new StreamTokenizer_s(new StringReader(example6)));
-        t7 = t7.parse(new StreamTokenizer_s(new StringReader(example7)));
-        t8 = t8.parse(new StreamTokenizer_s(new StringReader(example8)));
+        t1 = Term.string2Term(example1);
+        t2 = Term.string2Term(example2);
+        t3 = Term.string2Term(example3);
+        t4 = Term.string2Term(example4);
+        t5 = Term.string2Term(example5);
+        t6 = Term.string2Term(example6);
+        t7 = Term.string2Term(example7);
+        t8 = Term.string2Term(example8);
+        t9 = Term.string2Term(example9);
         s1.subst.put(t6,t2);   // X->a
         s1.subst.put(t7,t2);   // Y->a
         s2.subst.put(t6,t2);   // X->a
         s2.subst.put(t7,t3);   // Y->b
+        s3.subst.put(t8,t9);   // Z->f(M)
     }
     
     /** ***************************************************************
@@ -200,6 +253,7 @@ public class Substitutions {
         System.out.println("should be true.  Value: " + tau.apply(t6).equals(s1.apply(t6)));        
         System.out.println("should be true.  Value: " + tau.apply(t7).equals(s1.apply(t7)));        
         System.out.println("should be true.  Value: " + tau.apply(t8).equals(s1.apply(t8)));
+        System.out.println("should be true.  " + s3 + " -> " + t8 + " = " + t9 + " = " + s3.apply(t8) + " Value: " + t9.equals(s3.apply(t8)));
     }
             
     /** ***************************************************************
@@ -214,7 +268,7 @@ public class Substitutions {
         System.out.println("should be true: " + s1.apply(t1).equals(t4));
         System.out.println(s2 + " -> " + t1 + " = " + s2.apply(t1));
         System.out.println(t5);
-        System.out.println("should be true: " + s2.apply(t1).equals(t5));
+        System.out.println("should be true: " + s3.apply(t1).equals(t5));
     }
 
     /** ***************************************************************
