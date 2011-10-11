@@ -37,7 +37,7 @@ public class Term {
     
 public String t = "";  // lowercase is a constant, uppercase is a variable
 public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not composite
-public boolean negated = false;
+//public boolean negated = false;
 
 ArrayList<Formula> forms = new ArrayList<Formula>();
 String source = "";
@@ -50,8 +50,6 @@ int startLine = 0;
     public String toString() {
             
         StringBuffer result = new StringBuffer();
-        if (negated)
-            result.append('~');
         result.append(t);
         if (subterms.size() > 0) {
             result.append('(');
@@ -90,7 +88,7 @@ int startLine = 0;
         st.quoteChar('"');
         st.commentChar('#');
         st.commentChar('%');
-        st.eolIsSignificant(true);
+        st.eolIsSignificant(false);
     }
     
     /** ***************************************************************
@@ -99,15 +97,14 @@ int startLine = 0;
                
         try {
             //System.out.println("in Term.parseTermList(): " + this);
-            Term newT = new Term();
-            
+            Term newT = new Term();            
             subterms.add(newT.parse(st));
             st.nextToken();
             while (st.ttype == ',') {
                 newT = new Term();
                 subterms.add(newT.parse(st));
                 st.nextToken();
-                //System.out.println("in Term.parseTermList(): next token: " + st.ttype);
+                //System.out.println("in Term.parseTermList(): next token: " + st.ttype + " " + Character.toString((char) st.ttype));
             }
             return this;
         }
@@ -115,7 +112,7 @@ int startLine = 0;
             System.out.println("Error in Term.parseTermList(): " + ex.getMessage());
             System.out.println("Error in Term.parseTermList(): token:" + st.ttype);
             if (st.ttype == StreamTokenizer.TT_WORD)
-                System.out.println("Error in Term.parseTermList(): token:" + st.ttype);            
+                System.out.println("Error in Term.parseTermList(): token:" + st.ttype + " " + Character.toString((char) st.ttype));            
             ex.printStackTrace();
         }
         return null;
@@ -128,15 +125,14 @@ int startLine = 0;
         try {
             //setupStreamTokenizer(st);
             //System.out.println("Entering Term.parse(): " + this);     
-            //System.out.println("INFO in Term.parse(): before next token: " + st.ttype + " " + st.sval);
+            //System.out.println("INFO in Term.parse(): before next token: " + st.ttype + " " + Character.toString((char) st.ttype) + " " + st.sval);
             st.nextToken(); 
-            if (st.ttype == '~')
+            if (st.ttype != StreamTokenizer.TT_WORD)
                 st.nextToken();
-            //System.out.println("INFO in Term.parse(): after next token: " + st.ttype + " " + st.sval);
+            //System.out.println("INFO in Term.parse(): after next token: " + st.ttype + " " + Character.toString((char) st.ttype) + " " + st.sval);
             if (st.ttype != StreamTokenizer.TT_WORD)
                 throw new Exception("Expected a word."); 
             if (st.ttype == StreamTokenizer.TT_WORD && Character.isUpperCase(st.sval.charAt(0))) {
-                //st.nextToken();
                 t = st.sval;
                 return this;
             }
@@ -148,8 +144,7 @@ int startLine = 0;
                     st.pushBack();
                     if (st.ttype == '(') {
                         st.nextToken();
-                        parseTermList(st);
-                        //st.nextToken(); 
+                        parseTermList(st); 
                         if (st.ttype != ')')
                             throw new Exception("Close paren expected.");
                         return this;
@@ -172,11 +167,21 @@ int startLine = 0;
             if (st.ttype == StreamTokenizer.TT_WORD)
                 System.out.println("Error in Term.parse(): word token:" + st.sval); 
             else
-                System.out.println("Error in Term.parse(): token:" + st.ttype);
+                System.out.println("Error in Term.parse(): token:" + st.ttype + " " + Character.toString((char) st.ttype));
             ex.printStackTrace();
         }
         return this;
     }  
+    
+    /** ***************************************************************
+     */
+    public static Term string2Term(String s) {
+        
+        Term t = new Term();
+        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(s));
+        setupStreamTokenizer(st);
+        return t.parse(st);
+    }
     
     /** ***************************************************************
      * Check if the term is a variable. This assumes that t is a
@@ -219,6 +224,20 @@ int startLine = 0;
         for (int i = 0; i < subterms.size(); i++)
             result.addAll(subterms.get(i).collectVars());
         return result;
+    }
+    
+    /** ***************************************************************
+     */
+    public String getFunc() {
+               
+        return t;
+    }
+    
+    /** ***************************************************************
+     */
+    public ArrayList<Term> getArgs() {
+               
+        return subterms;
     }
     
     /** ***************************************************************
@@ -286,8 +305,8 @@ int startLine = 0;
     @Override public int hashCode() {
     
         int total = 0;
-        if (negated) 
-            total = 1;
+ //       if (negated) 
+ //           total = 1;
         if (subterms.size() < 1)
             return total + t.hashCode() * 2;
         else {
@@ -307,7 +326,9 @@ int startLine = 0;
             result.subterms.add(subterms.get(i).termCopy());
         return result;
     }
+    
     /** ***************************************************************
+     * ************ UNIT TESTS *****************
      * Set up test content.  
      */
     String example1 = "X";
@@ -371,20 +392,26 @@ int startLine = 0;
     public void testToString() {
 
         System.out.println("---------------------");
-        System.out.println("INFO in Parser.testToString(): all should be true");
+        System.out.println("INFO in Term.testToString(): all should be true");
         Term t = new Term();
         t = t.parse(new StreamTokenizer_s(new StringReader(t1.toString())));
         System.out.println(t1.toString().equals(t.toString()));
+        t = new Term();
         t = t.parse(new StreamTokenizer_s(new StringReader(t2.toString())));
         System.out.println(t2.toString().equals(t.toString()));
+        t = new Term();
         t = t.parse(new StreamTokenizer_s(new StringReader(t3.toString())));
         System.out.println(t3.toString().equals(t.toString()));
+        t = new Term();
         t = t.parse(new StreamTokenizer_s(new StringReader(t4.toString())));
         System.out.println(t4.toString().equals(t.toString()));
+        t = new Term();
         t = t.parse(new StreamTokenizer_s(new StringReader(t5.toString())));
         System.out.println(t5.toString().equals(t.toString()));
+        t = new Term();
         t = t.parse(new StreamTokenizer_s(new StringReader(t6.toString())));
         System.out.println(t6.toString().equals(t.toString()));
+        t = new Term();
         t = t.parse(new StreamTokenizer_s(new StringReader(t7.toString())));
         System.out.println(t7.toString().equals(t.toString()));
     }
