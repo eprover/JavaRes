@@ -43,12 +43,15 @@ public class Literal {
     public String op = "";
     public Term lhs = null;  // if there's no op, then the literal is just a term, held in lhs
     public Term rhs = null;
+    boolean negated = false;
      
      /** ***************************************************************
       */
      public String toString() {
              
          StringBuffer result = new StringBuffer();
+         if (negated)
+             result.append("~");
          if (!StringUtil.emptyString(op)) {
              if (op.equals("=") || op.equals("!="))
                  result.append(lhs + op + rhs);
@@ -79,6 +82,23 @@ public class Literal {
      }
      
      /** ***************************************************************
+      * Return true if the atoms of self and other are structurally 
+      * identical to each other, but the sign is the opposite.
+      */
+     public boolean isOpposite(Literal other) {
+
+         if (StringUtil.emptyString(op))
+             return this.isNegative() != other.isNegative() &&
+                  lhs.equals(other.lhs);
+         else {
+             return this.isNegative() != other.isNegative() &&
+                 op.equals(other.op) && 
+                 lhs.equals(other.lhs) && 
+                 rhs.equals(other.rhs);
+         }
+     }
+     
+     /** ***************************************************************
       */
      public boolean isNegative() {
         
@@ -89,7 +109,7 @@ public class Literal {
       */
      public boolean isPositive() {
         
-         return !lhs.negated;
+         return !negated;
      }
      
      /** ***************************************************************
@@ -108,6 +128,17 @@ public class Literal {
          if (rhs != null)
              result.addAll(rhs.collectVars());
          return result;
+     }
+
+     /** ***************************************************************
+      * Return a copy of self, instantiated with the given substitution.
+      */
+     public Literal instantiate(Substitutions subst) {
+
+         Literal newLit = new Literal();
+         newLit.lhs = subst.apply(lhs);
+         newLit.rhs = subst.apply(rhs); 
+         return newLit;
      }
      
      /** ***************************************************************
@@ -145,32 +176,24 @@ public class Literal {
          try {
              //System.out.println("Entering Literal.parseAtom(): " + this);
              lhs = new Term();
-
-             if (st.ttype == '~') {
-                 //System.out.println("INFO in Literal.parseAtom(): lhs is negated");
-                 lhs.negated = true;
-             }
              //System.out.println("INFO in Literal.parseAtom(): token:" + st.ttype + "  word:" + st.sval);
              lhs.parse(st);
              if (st.ttype != st.TT_EOF)
                  st.nextToken();
              else 
-                 throw new Exception("unexpected EOF");
+                 return this;
              if (st.ttype == '=' || st.ttype == '!') {
                  if (st.ttype == '!') {
                      st.nextToken();
                      if (st.ttype != '=')
                          throw new Exception("!= expected");
                      op = "=";
-                     lhs.negated = !lhs.negated;
+                     negated = !negated;
                  }
                  else
                      op = "=";
                  rhs = new Term();
 
-                 if (st.ttype == '~') {
-                     rhs.negated = true;
-                 }
                  //System.out.println("INFO in Literal.parseAtom(): token:" + st.ttype + "  word:" + st.sval);
                  rhs = rhs.parse(st);    
              }
@@ -182,7 +205,7 @@ public class Literal {
              if (st.ttype == StreamTokenizer.TT_WORD)
                  System.out.println("Error in Literal.parseAtom(): word token:" + st.sval);  
              else
-                 System.out.println("Error in Literal.parseAtom(): token:" + st.ttype);
+                 System.out.println("Error in Literal.parseAtom(): token:" + st.ttype + " " + Character.toString((char) st.ttype));
              ex.printStackTrace();
          }
          return null;
@@ -197,8 +220,17 @@ public class Literal {
          Term.setupStreamTokenizer(st);
          try {
              //System.out.println("Entering Literal.parseLiteral(): " + this);
+
+             //System.out.println("INFO in Literal.parseLiteral(): token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
              //st.nextToken();
              //st.pushBack();
+             //System.out.println("INFO in Literal.parseLiteral(): token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
+             if (st.ttype == '~') {
+                 negated = true;
+                 //System.out.println("INFO in Literal.parseLiteral(): it's negated");
+                 //st.nextToken();
+             }
+             //System.out.println("INFO in Literal.parseLiteral(): token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
              this.parseAtom(st);
              //System.out.println("Exiting Literal.parseLiteral(): " + this);
              return this;
@@ -208,7 +240,7 @@ public class Literal {
              if (st.ttype == StreamTokenizer.TT_WORD)
                  System.out.println("Error in Literal.parseLiteral(): word token:" + st.sval);  
              else
-                 System.out.println("Error in Literal.parseLiteral(): token:" + st.ttype);
+                 System.out.println("Error in Literal.parseLiteral(): token:" + st.ttype + " " + Character.toString((char) st.ttype));
              ex.printStackTrace();
          }
          return null;
@@ -226,12 +258,15 @@ public class Literal {
          try {
              Literal l = new Literal();
              l.parseLiteral(st);
+             //System.out.println("INFO in Literal.parseLiteralList(): (pre-loop): " + l);
              if (!l.toString().equals("$false")) 
                  res.add(l);                          
              while (st.ttype == '|') {               
                  l = new Literal();
+                 st.nextToken();
                  l.parseLiteral(st);
-                 if (!l.toString().equals("$false")) 
+                 //System.out.println("INFO in Literal.parseLiteralList(): " + l);
+                 if (!l.toString().equals("$false") && !StringUtil.emptyString(l.toString())) 
                      res.add(l);                                   
              }
              return res;
@@ -241,13 +276,53 @@ public class Literal {
              if (st.ttype == StreamTokenizer.TT_WORD)
                  System.out.println("Error in parseLiteralList(): word token:" + st.sval);  
              else
-                 System.out.println("Error in parseLiteralList(): token:" + st.ttype);
+                 System.out.println("Error in parseLiteralList(): token:" + st.ttype + " " + Character.toString((char) st.ttype));
              ex.printStackTrace();
          }
          return null;
      }   
      
      /** ***************************************************************
+      *  Convert a literal list to a textual representation that can be
+      *  parsed back.
+      */
+     public static String literalList2String(ArrayList<Literal> l) {
+
+         StringBuffer result = new StringBuffer();
+         if (l == null || l.size() < 1)
+             return "$false";
+         result.append(l.get(0).toString());
+         for (int i = 1; i < l.size(); i++) 
+              result.append("|" + l.get(i).toString());
+         return result.toString();
+     }
+     
+     /** ***************************************************************
+      *  Return true if (a literal equal to) lit is in litlist, false
+      *  otherwise.
+      */
+     public static boolean litInLitList(Literal lit, ArrayList<Literal>litList) {
+
+         for (int i = 0; i < litList.size(); i++)
+             if (lit.equals(litList.get(i)))
+                 return true;
+         return false;
+     }
+
+     /** ***************************************************************
+      * Return true if (a literal equal to) lit is in litlist, false
+      * otherwise.
+      */
+     public static boolean oppositeInLitList(Literal lit, ArrayList<Literal>litList) {
+
+         for (int i = 0; i < litList.size(); i++)
+             if (lit.isOpposite(litList.get(i)))
+                 return true;
+         return false;
+     }
+
+     /** ***************************************************************
+      * ************ UNIT TESTS *****************
       */
      public static Literal a1 = null;
      public static Literal a2 = null;
@@ -270,6 +345,7 @@ public class Literal {
          
          a1 = new Literal();
          StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(input1));
+         Term.setupStreamTokenizer(st);
          a1 = a1.parseLiteral(st);
          System.out.println("INFO in Literal.setup(): finished parsing a1: " + a1);
          
@@ -371,11 +447,12 @@ public class Literal {
       */
      public static void testLitList() {
 
-         System.out.println("---------------------");
+         System.out.println("-------------------------------------------------");
          System.out.println("INFO in testLitList(): all true");
          
          System.out.println("input2: " + input2);
          StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(input2));
+         Term.setupStreamTokenizer(st);
          ArrayList<Literal> l2 = parseLiteralList(st);
          System.out.println(l2);
          System.out.println(l2.size() == 5); 
