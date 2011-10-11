@@ -53,7 +53,7 @@ public class Clause {
             
         StringBuffer result = new StringBuffer();
         result.append("cnf(" + name + "," + type + "," + 
-                Literal.literalList2String(literals) + ")");
+                Literal.literalList2String(literals) + ").");
         return result.toString();
     }
     
@@ -129,6 +129,138 @@ public class Clause {
     }  
     
     /** ***************************************************************
+     * Return true if the clause is empty.
+     */
+    public boolean isEmpty() {
+
+        return literals.size() == 0;
+    }
+
+    /** ***************************************************************
+     * Return true if the clause is a unit clause.
+     */
+    public boolean isUnit() {
+
+        return literals.size() == 1;
+    }
+    
+    /** ***************************************************************
+     * Return true if the clause is a Horn clause.
+     */
+    public boolean isHorn() {
+
+        ArrayList<Literal> tmp = new ArrayList<Literal>();
+        for (int i = 0; i < literals.size(); i++) 
+            if (literals.get(i).isPositive())
+                tmp.add(literals.get(i));
+        return tmp.size() <= 1;
+    }
+    
+    /** ***************************************************************
+     * Return the indicated literal of the clause. Position is an
+     * integer from 0 to litNumber (exclusive).
+     */
+    public Literal getLiteral(int position) {
+
+        if (position >= 0 && position < literals.size())
+            return literals.get(position);
+        else
+            return null;
+    }
+    
+    /** ***************************************************************
+     * Insert all variables in self into the set res and return it. 
+     */
+    public ArrayList<String> collectVars() {
+
+        ArrayList<String> res = new ArrayList<String>();
+        for (int i = 0; i < literals.size(); i++)
+            res.addAll(literals.get(i).collectVars());
+        return res;
+    }
+    
+    /** ***************************************************************
+     * Insert all variables in self into the set res and return it. 
+     */
+    public ArrayList<Term> collectVarsAsTerms() {
+
+        ArrayList<Term> res = new ArrayList<Term>();
+        ArrayList<String> vars = collectVars();
+        for (int i = 0; i < vars.size(); i++) {
+            Term newT = new Term();
+            newT.t = vars.get(i);
+            res.add(newT);
+        }
+        return res;
+    }
+    
+    /** ***************************************************************
+     * Return the symbol-count weight of the clause.
+     */
+    public int weight(int fweight, int vweight) {
+
+        int res = 0;
+        for (int i = 0; i < literals.size(); i++)
+            res = res + literals.get(i).weight(fweight, vweight);
+        return res;
+    }
+    
+    /** ***************************************************************
+     * Return an instantiated copy of self. Name and type are copied
+     * and need to be overwritten if that is not desired.
+     */
+    public Clause instantiate(Substitutions subst) {
+
+        Clause newC = new Clause();
+        newC.type = type;
+        newC.name = name;
+        for (int i = 0; i < literals.size(); i++)
+            newC.literals.add(literals.get(i).instantiate(subst));
+        return newC;
+    }
+    
+    /** ***************************************************************
+     * Return a copy of self with fresh variables.
+     */
+    public Clause freshVarCopy() {
+
+        ArrayList<Term> vars = collectVarsAsTerms();
+        Substitutions s = Substitutions.freshVarSubst(vars);
+        return instantiate(s);
+    }
+    
+    /** ***************************************************************
+     * Remove duplicated literals from clause.
+     */
+    public void removeDupLits() {
+
+        ArrayList<Literal> res = new ArrayList<Literal>();
+        for (int i = 0; i < literals.size(); i++) {
+            if (!Literal.litInLitList(literals.get(i),res))
+                res.add(literals.get(i));
+        }
+        literals = res;
+    }
+
+    /** ***************************************************************
+     * Check if a clause is a simple tautology, i.e. if it contains
+     * two literals with the same atom, but different signs.
+     */
+    public boolean isTautology() {
+
+        if (literals.size() < 2)
+            return false;
+        for (int i = 0; i < literals.size(); i++) {
+            for (int j = 1; j < literals.size(); i++) {
+                if (literals.get(i).isOpposite(literals.get(j)));
+                    return true;
+            }
+        }
+        return false;     
+    }
+    
+    /** ***************************************************************
+     * ************ UNIT TESTS *****************
      */
     public static String str1 = "";
     
