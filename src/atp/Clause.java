@@ -56,7 +56,32 @@ public class Clause {
                 Literal.literalList2String(literals) + ").");
         return result.toString();
     }
-    
+
+    /** ***************************************************************
+     */
+    public Clause deepCopy() {
+        
+        Clause result = new Clause();
+        result.name = name;
+        result.type = type;
+        for (int i = 0; i < literals.size(); i++) 
+            result.literals.add(literals.get(i).deepCopy());
+        return result;
+    }
+
+    /** ***************************************************************
+     * @param start is the starting index of the literal list to copy
+     */
+    public Clause deepCopy(int start) {
+        
+        Clause result = new Clause();
+        result.name = name;
+        result.type = type;
+        for (int i = start; i < literals.size(); i++) 
+            result.literals.add(literals.get(i).deepCopy());
+        return result;
+    }
+ 
     /** ***************************************************************
      * Parse a clause. A clause in (slightly simplified) TPTP-3 syntax 
      * is written as
@@ -71,49 +96,50 @@ public class Clause {
     public Clause parse(StreamTokenizer_s st) {
                
         try {
-             st.nextToken(); 
-             if (st.ttype != StreamTokenizer.TT_WORD || !st.sval.equals("cnf"))
-                 throw new Exception("\"cnf\" expected.");
-             st.nextToken(); 
-             if (st.ttype != '(')
-                 throw new Exception("Open paren expected.");
-             st.nextToken(); 
-             if (st.ttype == StreamTokenizer.TT_WORD && Character.isLowerCase(st.sval.charAt(0)))
-                 name = st.sval;
-             else 
-                 throw new Exception("Identifier expected.");
-             st.nextToken(); 
-             if (st.ttype != ',')
-                 throw new Exception("Comma expected.");
-             st.nextToken(); 
-             if (st.ttype == StreamTokenizer.TT_WORD && Character.isLowerCase(st.sval.charAt(0))) {                 
-                 type = st.sval;
-                 if (!type.equals("axiom") && !type.equals("negated_conjecture"))
-                     type = "plain";
-             }
-             else 
-                 throw new Exception("Clause type enumeration expected.");
-             st.nextToken(); 
-             if (st.ttype != ',')
-                 throw new Exception("Comma expected.");
-             st.nextToken(); 
-             st.pushBack();
-             if (st.ttype == '(') {
-                 st.nextToken();
-                 literals = Literal.parseLiteralList(st);
-                 st.nextToken(); 
-                 if (st.ttype != ')')
-                     throw new Exception("Close paren expected.");
-             }
-             else
-                 literals = Literal.parseLiteralList(st);
-             //st.nextToken(); 
-             if (st.ttype != ')')
-                 throw new Exception("Close paren expected.");
-             st.nextToken(); 
-             if (st.ttype != '.')
-                 throw new Exception("Period expected.");
-             return this;
+            Term.setupStreamTokenizer(st);
+            st.nextToken(); 
+            if (st.ttype != StreamTokenizer.TT_WORD || !st.sval.equals("cnf"))
+                throw new Exception("\"cnf\" expected.");
+            st.nextToken(); 
+            if (st.ttype != '(')
+                throw new Exception("Open paren expected.");
+            st.nextToken(); 
+            if (st.ttype == StreamTokenizer.TT_WORD && Character.isLowerCase(st.sval.charAt(0)))
+                name = st.sval;
+            else 
+                throw new Exception("Identifier expected.");
+            st.nextToken(); 
+            if (st.ttype != ',')
+                throw new Exception("Comma expected.");
+            st.nextToken(); 
+            if (st.ttype == StreamTokenizer.TT_WORD && Character.isLowerCase(st.sval.charAt(0))) {                 
+                type = st.sval;
+                if (!type.equals("axiom") && !type.equals("negated_conjecture"))
+                   type = "plain";
+            }
+            else 
+                throw new Exception("Clause type enumeration expected.");
+            st.nextToken(); 
+            if (st.ttype != ',')
+                throw new Exception("Comma expected.");
+            st.nextToken(); 
+            st.pushBack();
+            if (st.ttype == '(') {
+                st.nextToken();
+                literals = Literal.parseLiteralList(st);
+                st.nextToken(); 
+                if (st.ttype != ')')
+                    throw new Exception("Close paren expected.");
+            }
+            else
+                literals = Literal.parseLiteralList(st);
+            //st.nextToken(); 
+            if (st.ttype != ')')
+                throw new Exception("Close paren expected.");
+            st.nextToken(); 
+            if (st.ttype != '.')
+                throw new Exception("Period expected.");
+            return this;
         }
         catch (Exception ex) {
             if (st.ttype == StreamTokenizer.TT_EOF)
@@ -122,11 +148,20 @@ public class Clause {
             if (st.ttype == StreamTokenizer.TT_WORD)
                 System.out.println("Error in Clause.parse(): word token:" + st.sval); 
             else
-                System.out.println("Error in Clause.parse(): token:" + st.ttype);
+                System.out.println("Error in Term.parseTermList(): token:" + st.ttype + " " + Character.toString((char) st.ttype));  
             ex.printStackTrace();
         }
         return this;
     }  
+    
+    /** ***************************************************************
+     */
+    public Clause string2Clause(String s) {
+    
+        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(s));
+        Term.setupStreamTokenizer(st);
+        return parse(st);
+    }
     
     /** ***************************************************************
      * Return true if the clause is empty.
@@ -171,26 +206,11 @@ public class Clause {
     /** ***************************************************************
      * Insert all variables in self into the set res and return it. 
      */
-    public ArrayList<String> collectVars() {
-
-        ArrayList<String> res = new ArrayList<String>();
-        for (int i = 0; i < literals.size(); i++)
-            res.addAll(literals.get(i).collectVars());
-        return res;
-    }
-    
-    /** ***************************************************************
-     * Insert all variables in self into the set res and return it. 
-     */
-    public ArrayList<Term> collectVarsAsTerms() {
+    public ArrayList<Term> collectVars() {
 
         ArrayList<Term> res = new ArrayList<Term>();
-        ArrayList<String> vars = collectVars();
-        for (int i = 0; i < vars.size(); i++) {
-            Term newT = new Term();
-            newT.t = vars.get(i);
-            res.add(newT);
-        }
+        for (int i = 0; i < literals.size(); i++)
+            res.addAll(literals.get(i).collectVars());
         return res;
     }
     
@@ -224,7 +244,7 @@ public class Clause {
      */
     public Clause freshVarCopy() {
 
-        ArrayList<Term> vars = collectVarsAsTerms();
+        ArrayList<Term> vars = collectVars();
         Substitutions s = Substitutions.freshVarSubst(vars);
         return instantiate(s);
     }
@@ -252,7 +272,7 @@ public class Clause {
             return false;
         for (int i = 0; i < literals.size(); i++) {
             for (int j = 1; j < literals.size(); i++) {
-                if (literals.get(i).isOpposite(literals.get(j)));
+                if (literals.get(i).isOpposite(literals.get(j)))
                     return true;
             }
         }
