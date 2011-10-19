@@ -23,6 +23,7 @@ package atp;
 import atp.Parser.Formula;
 
 import com.articulate.sigma.*;
+import com.articulate.sigma.STP2.FormulaRating;
 
 import java.io.*;
 import java.text.ParseException;
@@ -33,12 +34,6 @@ import java.util.*;
  * literal - atom or negated atom
   */
 public class Literal {
-        
-    ArrayList<Formula> forms = new ArrayList<Formula>();
-    String source = "";
-    int pos = -1;
-    String name = "";
-    int startLine = 0;    
     
     public String op = "";
     public Term lhs = null;  // if there's no op, then the literal is just a term, held in lhs
@@ -65,8 +60,10 @@ public class Literal {
      
      /** ***************************************************************
       */
-     public boolean equals(Literal l) {
+     public boolean equals(Object l_obj) {
         
+         assert !l_obj.getClass().getName().equals("Literal") : "Literal.equals() passed object not of type Literal"; 
+         Literal l = (Literal) l_obj;
          if (!lhs.equals(l.lhs))
              return false;
          if (!StringUtil.emptyString(op)) {
@@ -79,6 +76,28 @@ public class Literal {
              if (!StringUtil.emptyString(l.op))
                  return false;
          return true;
+     }
+     
+     /** ***************************************************************
+      * should never be called so throw an error.
+      */   
+     public int hashCode() {
+         assert false : "Literal.hashCode not designed";
+         return 0;
+     }
+     
+     /** ***************************************************************
+      */
+     public Literal deepCopy() {
+         
+         Literal result = new Literal();         
+         result.op = op;
+         if (lhs != null)
+             result.lhs = lhs.deepCopy();
+         if (rhs != null)
+             result.rhs = rhs.deepCopy();
+         result.negated = negated;  
+         return result;
      }
      
      /** ***************************************************************
@@ -121,7 +140,7 @@ public class Literal {
      
      /** ***************************************************************
       */
-     public ArrayList collectVars() {
+     public ArrayList<Term> collectVars() {
          
          ArrayList result = new ArrayList();
          result.addAll(lhs.collectVars());
@@ -166,9 +185,9 @@ public class Literal {
       * An atom is either a conventional atom, in which case it's 
       * syntactically identical to a term, or it is an equational literal, 
       * of the form 't1=t2' or 't1!=t2', where t1 and t2 are terms.
-      *  In either case, we represent the atom as a first-order
-      *  term. Equational literals are represented at terms with faux
-      *  function symbols "=" and "!=". 
+      * In either case, we represent the atom as a first-order
+      * term. Equational literals are represented at terms with faux
+      * function symbols "=" and "!=". 
       */
      public Literal parseAtom(StreamTokenizer_s st) {
                 
@@ -176,7 +195,7 @@ public class Literal {
          try {
              //System.out.println("Entering Literal.parseAtom(): " + this);
              lhs = new Term();
-             //System.out.println("INFO in Literal.parseAtom(): token:" + st.ttype + "  word:" + st.sval);
+             //System.out.println("INFO in Literal.parseAtom(): (1) token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
              lhs.parse(st);
              if (st.ttype != st.TT_EOF)
                  st.nextToken();
@@ -194,7 +213,7 @@ public class Literal {
                      op = "=";
                  rhs = new Term();
 
-                 //System.out.println("INFO in Literal.parseAtom(): token:" + st.ttype + "  word:" + st.sval);
+                 //System.out.println("INFO in Literal.parseAtom(): (2) token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
                  rhs = rhs.parse(st);    
              }
              //System.out.println("Exiting Literal.parseAtom(): " + this);
@@ -222,14 +241,18 @@ public class Literal {
              //System.out.println("Entering Literal.parseLiteral(): " + this);
 
              //System.out.println("INFO in Literal.parseLiteral(): token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
-             //st.nextToken();
-             //st.pushBack();
+             st.nextToken();
+             if (st.ttype == '|')
+                 st.nextToken();
              //System.out.println("INFO in Literal.parseLiteral(): token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
              if (st.ttype == '~') {
                  negated = true;
                  //System.out.println("INFO in Literal.parseLiteral(): it's negated");
-                 //st.nextToken();
+                 st.nextToken();  //restored 10/17
+                 st.pushBack();
              }
+             else
+                 st.pushBack();
              //System.out.println("INFO in Literal.parseLiteral(): token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
              this.parseAtom(st);
              //System.out.println("Exiting Literal.parseLiteral(): " + this);
@@ -258,14 +281,16 @@ public class Literal {
          try {
              Literal l = new Literal();
              l.parseLiteral(st);
-             //System.out.println("INFO in Literal.parseLiteralList(): (pre-loop): " + l);
+             //System.out.println("INFO in Literal.parseLiteralList(): (pre-loop result): " + l);
              if (!l.toString().equals("$false")) 
                  res.add(l);                          
              while (st.ttype == '|') {               
                  l = new Literal();
-                 st.nextToken();
+                 //st.nextToken();   // removed 10/17
                  l.parseLiteral(st);
-                 //System.out.println("INFO in Literal.parseLiteralList(): " + l);
+                 //System.out.println("INFO in Literal.parseLiteralList(): (post loop result): " + l);
+                 //System.out.println("INFO in Literal.parseLiteralList(): (post loop result): " + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
+
                  if (!l.toString().equals("$false") && !StringUtil.emptyString(l.toString())) 
                      res.add(l);                                   
              }
@@ -322,6 +347,18 @@ public class Literal {
      }
 
      /** ***************************************************************
+      *  Try to extend subst a match from self to other. Return True on
+      *  success, False otherwise. In the False case, subst is unchanged.
+      */
+     public boolean match(Literal other, BacktrackSubstitution subst) {
+
+         if (this.isNegative() != other.isNegative())
+             return false;
+         else
+             return subst.match(lhs, other.lhs);
+     }
+     
+     /** ***************************************************************
       * ************ UNIT TESTS *****************
       */
      public static Literal a1 = null;
@@ -332,10 +369,11 @@ public class Literal {
      public static Literal a6 = null;
      public static Literal a7 = null;
      
-     public static String input1 = "p(X)  ~q(f(X,a), b)  ~a=b  a!=b  ~a!=f(X,b) p(X) ~p(X)";
+     public static String input1 = "p(X)  ~q(f(X,a), b)  ~a=b  a!=b  ~a!=f(X,b)  p(X)  ~p(X)";
      public static String input2 = "p(X)|~q(f(X,a), b)|~a=b|a!=b|~a!=f(X,b)";
      public static String input3 = "$false";
      public static String input4 = "$false|~q(f(X,a), b)|$false";
+     public static String input5 = "p(a)|p(f(X))";
          
      /** ***************************************************************
       * Setup function for clause/literal unit tests. Initialize
@@ -382,48 +420,54 @@ public class Literal {
          System.out.println("---------------------");
          System.out.println("INFO in testLiterals(): all true");
          System.out.println("a1: " + a1);
-         System.out.println(a1.isPositive());
-         System.out.println(!a1.isEquational());
+         System.out.println("is positive:" + a1.isPositive());
+         System.out.println("is not equational: " + !a1.isEquational());
          ArrayList vars = a1.collectVars();
-         System.out.println("Should be 1 :" + vars.size());
+         System.out.println("Number of variables. Should be 1 :" + vars.size());
 
+         System.out.println();
          System.out.println("a2: " + a2);
-         System.out.println(a2.isNegative());
-         System.out.println(!a2.isEquational());
+         System.out.println("is positive:" + !a2.isNegative());
+         System.out.println("is not equational: " + !a2.isEquational());
          vars = a2.collectVars();
-         System.out.println("Should be 1 :" + vars.size());
+         System.out.println("Number of variables. Should be 1 :" + vars.size());
          
+         System.out.println();
          System.out.println("a3: " + a3);
-         System.out.println(a3.isNegative());
-         System.out.println(a3.isEquational());
-         System.out.println(a3.equals(a4));
+         System.out.println("is positive:" + !a3.isNegative());
+         System.out.println("is equational: " + a3.isEquational());
+         System.out.println(a3 + " equals " + a4 + " :" + a3.equals(a4));
          vars = a3.collectVars();
-         System.out.println("Should be 0 :" + vars.size());
+         System.out.println("Number of variables. Should be 0 :" + vars.size());
          
+         System.out.println();
          System.out.println("a4: " + a4);
-         System.out.println(a4.isNegative());
-         System.out.println(a4.isEquational());
-         System.out.println(a4.equals(a3));
+         System.out.println("is negative:" + a4.isNegative());
+         System.out.println("is equational: " + a4.isEquational());
+         System.out.println(a4 + " equals " + a3 + " :" + a4.equals(a3));
          vars = a4.collectVars();
-         System.out.println("Should be 0 :" + vars.size());
+         System.out.println("Number of variables. Should be 0 :" + vars.size());
          
+         System.out.println();
          System.out.println("a5: " + a5);
-         System.out.println(!a5.isNegative());
-         System.out.println(a5.isEquational());
+         System.out.println("is positive:" + !a5.isNegative());
+         System.out.println("is equational: " + a5.isEquational());
          vars = a5.collectVars();
-         System.out.println("Should be 1 :" + vars.size());   
+         System.out.println("Number of variables. Should be 1 :" + vars.size());   
          
+         System.out.println();
          System.out.println("a6: " + a6);
-         System.out.println(!a6.isNegative());
-         System.out.println(!a6.isEquational());
+         System.out.println("is positive:" + !a6.isNegative());
+         System.out.println("is not equational: " + !a6.isEquational());
          vars = a6.collectVars();
-         System.out.println("Should be 1 :" + vars.size());   
+         System.out.println("Number of variables. Should be 1 :" + vars.size());   
          
+         System.out.println();
          System.out.println("a7: " + a7);
-         System.out.println(a7.isNegative());
-         System.out.println(!a7.isEquational());
+         System.out.println("is positive:" + !a7.isNegative());
+         System.out.println("is not equational: " + !a7.isEquational());
          vars = a7.collectVars();
-         System.out.println("Should be 1 :" + vars.size());   
+         System.out.println("Number of variables. Should be 1 :" + vars.size());   
      }
 
      /** ***************************************************************
@@ -456,18 +500,27 @@ public class Literal {
          ArrayList<Literal> l2 = parseLiteralList(st);
          System.out.println(l2);
          System.out.println(l2.size() == 5); 
-
+         System.out.println();
+         
          System.out.println("input3: " + input3);
          st = new StreamTokenizer_s(new StringReader(input3));
          ArrayList<Literal> l3 = parseLiteralList(st);
          System.out.println(l3);
          System.out.println(l3.size() == 0); 
+         System.out.println();
          
          System.out.println("input4: " + input4);
          st = new StreamTokenizer_s(new StringReader(input4));
          ArrayList<Literal> l4 = parseLiteralList(st);
          System.out.println(l4);
-         System.out.println(l4.size() == 1);          
+         System.out.println(l4.size() == 1);     
+         System.out.println();
+         
+         System.out.println("input5: " + input5);
+         st = new StreamTokenizer_s(new StringReader(input5));
+         ArrayList<Literal> l5 = parseLiteralList(st);
+         System.out.println(l5);
+         System.out.println(l5.size() == 2);  
      }
          
      /** ***************************************************************
