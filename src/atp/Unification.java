@@ -204,19 +204,19 @@ public class Unification {
        if (successExpected) {
           if (sigma != null) {
               if (sigma.apply(s).equals(sigma.apply(t)))
-                  System.out.println("INFO in Unification.unifTest(): " + sigma.apply(s) + " " + sigma.apply(t) + " " + sigma);
+                  System.out.println("Success: " + sigma.apply(s) + " " + sigma.apply(t) + " " + sigma);
               else
-                  System.out.println("INFO in Unification.unifTest(): Failure, " + sigma + "doesn't unify " + s + " and " + t +
+                  System.out.println("Failure, " + sigma + "doesn't unify " + s + " and " + t +
                           ". " + sigma.apply(s) + "!=" + sigma.apply(t)); 
           }
           else
-              System.out.println("INFO in Unification.unifTest(): Failure, sigma is null");
+              System.out.println("Failure, sigma is null");
        }
        else 
            if (sigma == null)
-               System.out.println("INFO in Unification.unifTest(): Success, sigma is null ");
+               System.out.println("Success, sigma is null ");
            else 
-               System.out.println("INFO in Unification.unifTest(): Failure " + sigma);     
+               System.out.println("Failure, sigma is not null: " + sigma);     
        System.out.println();
     }
     
