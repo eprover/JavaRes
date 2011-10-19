@@ -78,11 +78,31 @@ public class Substitutions {
         while (it.hasNext()) {
             Term key = it.next();
             Term value = subst.get(key);
-            result.subst.put(key.termCopy(),value.termCopy());
+            result.subst.put(key.deepCopy(),value.deepCopy());
         }
         return result;
     }
 
+    /** ***************************************************************
+     * Return the value of a variable (i.e. the term it is bound to,
+     * or the variable itself if it is not bound).
+     */    
+    public Term value(Term var) {
+
+        if (subst.keySet().contains(var))
+            return subst.get(var);
+        else
+            return var;
+    }
+
+    /** ***************************************************************
+     * Return True if var is bound in self, false otherwise.
+     */    
+    public boolean isBound(Term var) {
+
+        return subst.keySet().contains(var);
+    }
+    
     /** ***************************************************************
      */ 
     public void addSubst(Term t1, Term t2) {
@@ -94,6 +114,8 @@ public class Substitutions {
      */    
     @Override public boolean equals(Object s2_obj) {
 
+        assert s2_obj != null : "Substitutions.equals() argument is null";
+        assert !s2_obj.getClass().getName().equals("Substitutions") : "Substitutions.equals() passed object not of type Substitutions"; 
         Substitutions s2 = (Substitutions) s2_obj;
         if (subst.keySet().size() != s2.subst.keySet().size())
             return false;
@@ -114,6 +136,14 @@ public class Substitutions {
         return true;
     }
 
+    /** ***************************************************************
+     * should never be called so throw an error.
+     */   
+    public int hashCode() {
+        assert false : "Substitutions.hashCode not designed";
+        return 0;
+    }
+    
     /** ***************************************************************
      * Apply the substitution to a term. Return the result.
      */    
@@ -166,10 +196,10 @@ public class Substitutions {
      * different from input variables. However, it is guaranteed that
      * freshVar() will never return the same variable more than once.
      */    
-    private static String freshVar() {
+    private static Term freshVar() {
 
         Substitutions.freshVarCounter = Substitutions.freshVarCounter + 1;
-        return "X" + Integer.toString(Substitutions.freshVarCounter);
+        return Term.string2Term("X" + Integer.toString(Substitutions.freshVarCounter));
     }
     
     /** ***************************************************************
@@ -183,8 +213,7 @@ public class Substitutions {
 
         Substitutions s = new Substitutions();
         for (int i = 0; i < vars.size(); i++) {
-            Term newVar = new Term();
-            newVar.t = freshVar();
+            Term newVar = freshVar();
             s.subst.put(vars.get(i),newVar);
         }
         return s;
@@ -221,10 +250,8 @@ public class Substitutions {
     /** ***************************************************************
      * Set up test content.  
      */
-    public void setupTests() {
+    public static void setupTests() {
         
-        Parser p = new Parser();
-        Term t = new Term();
         t1 = Term.string2Term(example1);
         t2 = Term.string2Term(example2);
         t3 = Term.string2Term(example3);
@@ -268,7 +295,30 @@ public class Substitutions {
         System.out.println("should be true: " + s1.apply(t1).equals(t4));
         System.out.println(s2 + " -> " + t1 + " = " + s2.apply(t1));
         System.out.println(t5);
-        System.out.println("should be true: " + s3.apply(t1).equals(t5));
+        System.out.println("should be true: " + s2.apply(t1).equals(t5));
+    }
+
+    /** *************************************************************** 
+     */
+    public static void testFreshVarSubst() {
+
+        System.out.println("---------------------");
+        System.out.println("INFO in testSubstApply()");
+        Term var1 = freshVar();
+        Term var2 = freshVar();
+        if (!var1.equals(var2))
+            System.out.println("Correct, " + var1 + " != " + var2);
+        else
+            System.out.println("Failure, " + var1 + " == " + var2);
+        
+        ArrayList<Term> vars = t1.collectVars();
+        Substitutions sigma = freshVarSubst(vars);
+        ArrayList<Term> vars2 = sigma.apply(t1).collectVars();
+        boolean shared = vars.removeAll(vars2);   // if false, intersection is empty set
+        if (!shared)
+            System.out.println("Correct, " + var1 + " & " + var2 + " don't share variables.");
+        else
+            System.out.println("Failure, " + var1 + " & " + var2 + " do share variables.");
     }
 
     /** ***************************************************************
@@ -276,9 +326,9 @@ public class Substitutions {
      */
     public static void main(String[] args) {
         
-        Substitutions s = new Substitutions();
-        s.setupTests();
-        s.testSubstBasic();
-        s.testSubstApply();
+        setupTests();
+        testSubstBasic();
+        testSubstApply();
+        testFreshVarSubst();
     }
 }
