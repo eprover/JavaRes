@@ -27,7 +27,6 @@ import java.util.*;
 
 public class Parser {
     
-    ArrayList<Formula> forms = new ArrayList<Formula>();
     String source = "";
     int pos = -1;
     String name = "";
