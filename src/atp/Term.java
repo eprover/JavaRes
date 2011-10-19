@@ -37,13 +37,6 @@ public class Term {
     
 public String t = "";  // lowercase is a constant, uppercase is a variable
 public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not composite
-//public boolean negated = false;
-
-ArrayList<Formula> forms = new ArrayList<Formula>();
-String source = "";
-int pos = -1;
-String name = "";
-int startLine = 0;
 
     /** ***************************************************************
      */
@@ -119,6 +112,7 @@ int startLine = 0;
     }  
     
     /** ***************************************************************
+     * This routine expects the tokenizer to be set before the starting token.
      */
     public Term parse(StreamTokenizer_s st) {
                
@@ -149,8 +143,9 @@ int startLine = 0;
                             throw new Exception("Close paren expected.");
                         return this;
                     }
-                    else 
+                    else {
                         return this;
+                    }
                 }
                 else {
                     if (st.sval.equals("$false"))
@@ -216,11 +211,11 @@ int startLine = 0;
     
     /** ***************************************************************
      */
-    public ArrayList<String> collectVars() {
+    public ArrayList<Term> collectVars() {
         
-        ArrayList<String> result = new ArrayList<String>();
+        ArrayList<Term> result = new ArrayList<Term>();
         if (termIsVar())
-            result.add(t);
+            result.add(this);
         for (int i = 0; i < subterms.size(); i++)
             result.addAll(subterms.get(i).collectVars());
         return result;
@@ -286,9 +281,11 @@ int startLine = 0;
     
     /** ***************************************************************
      */
-    @Override public boolean equals(Object other) {
+    @Override public boolean equals(Object other_obj) {
         
-        Term t2 = (Term) other;
+        assert other_obj != null : "Term.equals() argument is null";
+        assert !other_obj.getClass().getName().equals("Term") : "Term.equals() passed object not of type Term"; 
+        Term t2 = (Term) other_obj;
         //System.out.println("INFO in Term.equals(): term:" + this + " other: " + other);
         if (!t2.t.equals(t))
             return false;
@@ -318,12 +315,12 @@ int startLine = 0;
     
     /** ***************************************************************
      */
-    public Term termCopy() {
+    public Term deepCopy() {
         
         Term result = new Term();
         result.t = t;
         for (int i = 0; i < subterms.size(); i++)
-            result.subterms.add(subterms.get(i).termCopy());
+            result.subterms.add(subterms.get(i).deepCopy());
         return result;
     }
     
@@ -472,17 +469,17 @@ int startLine = 0;
         System.out.println("---------------------");
         System.out.println("INFO in testCopy(): all true");
         Term t = new Term();
-        t = t1.termCopy();
+        t = t1.deepCopy();
         System.out.println(t.equals(t1));
-        t = t2.termCopy();
+        t = t2.deepCopy();
         System.out.println(t.equals(t2));
-        t = t3.termCopy();
+        t = t3.deepCopy();
         System.out.println(t.equals(t3));
-        t = t4.termCopy();
+        t = t4.deepCopy();
         System.out.println(t.equals(t4));
-        t = t5.termCopy();
+        t = t5.deepCopy();
         System.out.println(t.equals(t5));
-        t = t6.termCopy();
+        t = t6.deepCopy();
         System.out.println(t.equals(t6));
     }
     
@@ -530,7 +527,6 @@ int startLine = 0;
         
         Term p = new Term();
         p.setupTests();
-        //p.setupNewTests();
         p.parseTest();
         p.testToString();
         p.testIsVar();
