@@ -35,7 +35,6 @@ package atp;
 import com.articulate.sigma.*;
 
 import java.io.*;
-import java.text.ParseException;
 import java.util.*;
 
 /** ***************************************************************
@@ -69,6 +68,13 @@ public class Clause {
         return result;
     }
 
+    /** ***************************************************************
+     */
+    public int length() {
+               
+        return literals.size();
+    }
+    
     /** ***************************************************************
      * @param start is the starting index of the literal list to copy
      */
