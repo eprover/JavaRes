@@ -51,11 +51,27 @@ public class ClauseSet {
     }
     
     /** ***************************************************************
+     * get a clause
+     */ 
+    public Clause get(int i) {
+
+        return clauses.get(i);
+    }
+    
+    /** ***************************************************************
      * Add a clause to the clause set.
      */ 
     public void add(Clause clause) {
 
         clauses.add(clause);
+    }
+    
+    /** ***************************************************************
+     * Add a clause to the clause set.
+     */ 
+    public void addAll(ClauseSet clauseSet) {
+
+        clauses.addAll(clauseSet.clauses);
     }
     
     /** ***************************************************************
