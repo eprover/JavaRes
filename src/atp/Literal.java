@@ -156,7 +156,8 @@ public class Literal {
 
          Literal newLit = new Literal();
          newLit.lhs = subst.apply(lhs);
-         newLit.rhs = subst.apply(rhs); 
+         if (!StringUtil.emptyString(op))
+             newLit.rhs = subst.apply(rhs); 
          return newLit;
      }
      
