@@ -67,13 +67,6 @@ public class Clause {
             result.literals.add(literals.get(i).deepCopy());
         return result;
     }
-
-    /** ***************************************************************
-     */
-    public int length() {
-               
-        return literals.size();
-    }
     
     /** ***************************************************************
      * @param start is the starting index of the literal list to copy
@@ -89,6 +82,27 @@ public class Clause {
     }
  
     /** ***************************************************************
+     */
+    public int length() {
+               
+        return literals.size();
+    }
+    
+    /** ***************************************************************
+     */
+    public void add(Literal l) {
+        
+        literals.add(l);
+    }
+    
+    /** ***************************************************************
+     */
+    public void addAll(ArrayList<Literal> l) {
+        
+        literals.addAll(l);
+    }
+    
+    /** ***************************************************************
      * Parse a clause. A clause in (slightly simplified) TPTP-3 syntax 
      * is written as
      *    cnf(<name>, <type>, <literal list>).
@@ -97,7 +111,9 @@ public class Clause {
      * of literals, optionally enclosed in parenthesis.
      * For us, all clause types are essentially the same, so we only
      * distinguish "axiom", "negated_conjecture", and map everything else
-     * to "plain".
+     * to "plain".  
+     * @return the parsed clause.  Note also that this is the side effect 
+     * on the clause instance
      */
     public Clause parse(StreamTokenizer_s st) {
                
