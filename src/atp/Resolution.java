@@ -65,8 +65,13 @@ public class Resolution {
      */
     public static Clause resolution(Clause clause1, int lit1, Clause clause2, int lit2) {
 
+        //System.out.println("INFO in Resolution.resolution(): " + clause1 + " " + lit1 + " " + clause2 + " " + lit2);
         Literal l1 = clause1.getLiteral(lit1);
+        assert l1 != null;
         Literal l2 = clause2.getLiteral(lit2);
+        assert l2 != null;
+        if (l1 == null || l2 == null)
+            System.out.println("Error in Resolution.resolution(): literals are null " + l1 + " " + l2);
         if (l1.isNegative() == l2.isNegative())
             return null;
         Substitutions sigma = Unification.mgu(l1.lhs, l2.lhs);
@@ -148,9 +153,10 @@ public class Resolution {
      */
     public static void testResolution() {
 
+        System.out.println("Resolution.testResolution()");
         Clause res1 = resolution(c1, 0, c2,0);
         assert res1 != null;
-        System.out.println("Resolution.testResolution(): successful result: " + res1);
+        System.out.println("expected result: cnf(c1,plain,p(b,a)|p(f(Y),a)). result: " + res1);
 
         Clause res2 = resolution(c1, 0, c3,0);
         assert res2 == null;
@@ -158,7 +164,7 @@ public class Resolution {
 
         Clause res3 = resolution(c2, 0, c3,0);
         assert res3 != null;
-        System.out.println("Resolution.testResolution(): successful result: " + res3);
+        System.out.println("Expected result: cnf(c2,plain,p(f(Y),a)|~p(f(a),X0)). result: " + res3);
 
         Clause res4 = resolution(c1, 0, c3,1);
         assert res4 == null;
@@ -170,10 +176,11 @@ public class Resolution {
      */
     public static void testFactoring() {
   
+        System.out.println("Resolution.testFactoring()");
         Clause f1 = factor(c1,0,1);
         assert f1 != null;
         assert f1.length()==1;
-        System.out.println("Resolution.testFactoring(): successful result of length 1: Factor:" + f1);
+        System.out.println("Expected result: cnf(c0,plain,p(a,a)). Factor:" + f1);
         
         Clause f2 = factor(c2,0,1);
         assert f2 == null;
