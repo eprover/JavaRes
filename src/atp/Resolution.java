@@ -80,11 +80,13 @@ public class Resolution {
             return null;
         ArrayList<Literal> lits1 = new ArrayList<Literal> ();
        
+        //System.out.println("INFO in Resolution.resolution(): clause size " + clause1.literals.size());
         for (int i = 0; i < clause1.literals.size(); i++) {
             Literal l =  clause1.literals.get(i); 
             //System.out.println("INFO in Resolution.resolution(): literal " + l);
             if (!l.equals(l1))
                 lits1.add(l.instantiate(sigma));
+            //System.out.println("INFO in Resolution.resolution(): literals " + lits1);
         }
         ArrayList<Literal> lits2 = new ArrayList<Literal> ();
         for (int i = 0; i < clause2.literals.size(); i++) {
@@ -146,6 +148,13 @@ public class Resolution {
        c2.parse(st);
        c3.parse(st);
        c4.parse(st);
+       System.out.println("Resolution.setup(): expected clauses:");
+       System.out.println(spec);
+       System.out.println("actual:");
+       System.out.println(c1);
+       System.out.println(c2);
+       System.out.println(c3);
+       System.out.println(c4);       
     }
     
     /** ***************************************************************
