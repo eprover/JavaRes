@@ -155,6 +155,7 @@ public class Literal {
      public Literal instantiate(Substitutions subst) {
 
          Literal newLit = new Literal();
+         newLit.negated = negated;
          newLit.lhs = subst.apply(lhs);
          if (!StringUtil.emptyString(op))
              newLit.rhs = subst.apply(rhs); 
@@ -523,7 +524,14 @@ public class Literal {
          System.out.println(l5);
          System.out.println(l5.size() == 2);  
      }
+     
+     /** ***************************************************************
+      * Test instantiation.
+      */
+     public static void testInstantiate() {
          
+     }
+     
      /** ***************************************************************
      */
     public static void main(String[] args) {
@@ -532,6 +540,7 @@ public class Literal {
         testLiterals();
         testLitWeight();
         testLitList();
+        testInstantiate();
     }
 
 }
