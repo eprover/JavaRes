@@ -324,19 +324,33 @@ public class Clause {
      */
     public static void testClauses() {     
 
+        System.out.println("INFO in Clause.testClauses(): expected results: \n" + str1);
+        System.out.println("results:");
         StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(str1));
-        Clause c1 = new Clause();
+        Clause c1 = new Clause();        
         c1.parse(st);
+        assert c1.toString().equals("cnf(test,axiom,p(a)|p(f(X))).") : 
+               "Failure. " + c1.toString() + " not equal to cnf(test,axiom,p(a)|p(f(X))).";
         System.out.println(c1);
+        
         Clause c2 = new Clause();
         c2.parse(st);
+        assert c2.toString().equals("cnf(test,axiom,(p(a)|p(f(X)))).") : 
+            "Failure. " + c2.toString() + " not equal to cnf(test,axiom,(p(a)|p(f(X)))).";
         System.out.println(c2);
+        
         Clause c3 = new Clause();
         c3.parse(st);
+        assert c3.toString().equals("cnf(test3,lemma,(p(a)|~p(f(X)))).") : 
+            "Failure. " + c3.toString() + " not equal to cnf(test3,lemma,(p(a)|~p(f(X)))).";
         System.out.println(c3);
+        
         Clause c4 = new Clause();
         c4.parse(st);
+        assert c4.toString().equals("cnf(taut,axiom,p(a)|q(a)|~p(a)).") : 
+            "Failure. " + c4.toString() + " not equal to cnf(taut,axiom,p(a)|q(a)|~p(a)).";
         System.out.println(c4);
+        
         Clause c5 = new Clause();
         c5.parse(st); 
         System.out.println(c5);
