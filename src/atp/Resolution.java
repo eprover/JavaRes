@@ -28,7 +28,7 @@
     ----------  where sigma = mgu(a,b)
     sigma(c|a)
 
-    Again, c is an arbitray disjunction.
+    Again, c is an arbitrary disjunction.
     
 Copyright 2010-2011 Adam Pease, apease@articulatesoftware.com
 
@@ -107,6 +107,8 @@ public class Resolution {
      */
     public static Clause factor(Clause clause, int lit1, int lit2) {
 
+        //System.out.println("INFO in Resolution.factor(): " + clause + " " + lit1 + " " + lit2);
+        //System.out.println("INFO in Resolution.factor(): " + clause.getLiteral(lit1) + " " + clause.getLiteral(lit2));
         Literal l1 = clause.getLiteral(lit1);
         Literal l2 = clause.getLiteral(lit2);
         if (l1.isNegative() != l2.isNegative())
@@ -117,7 +119,7 @@ public class Resolution {
         ArrayList<Literal> lits = new ArrayList<Literal> ();
         for (int i = 0; i < clause.literals.size(); i++) {
             Literal l =  clause.literals.get(i); 
-            if (!l.equals(l2))
+            //if (!l.equals(l2))
                 lits.add(l.instantiate(sigma));
         }
         Clause res = new Clause();
@@ -133,6 +135,7 @@ public class Resolution {
     public static Clause c2 = new Clause();
     public static Clause c3 = new Clause();
     public static Clause c4 = new Clause();
+    public static Clause c5 = new Clause();
     
     /** ***************************************************************
      * Setup function for resolution testing
@@ -142,19 +145,22 @@ public class Resolution {
        String spec = "cnf(c1,axiom,p(a, X)|p(X,a)).\n" +
            "cnf(c2,axiom,~p(a,b)|p(f(Y),a)).\n" +
            "cnf(c3,axiom,p(Z,X)|~p(f(Z),X0)).\n" +
-           "cnf(c4,axiom,p(X,X)|p(a,f(Y))).";
+           "cnf(c4,axiom,p(X,X)|p(a,f(Y))).\n" +
+           "cnf(ftest,axiom,p(X)|~q|p(a)|~q|p(Y)).";
        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec));
        c1.parse(st);
        c2.parse(st);
        c3.parse(st);
        c4.parse(st);
+       c5.parse(st);
        System.out.println("Resolution.setup(): expected clauses:");
        System.out.println(spec);
        System.out.println("actual:");
        System.out.println(c1);
        System.out.println(c2);
        System.out.println(c3);
-       System.out.println(c4);       
+       System.out.println(c4);
+       System.out.println(c5); 
     }
     
     /** ***************************************************************
@@ -198,6 +204,10 @@ public class Resolution {
         Clause f4 = factor(c4,0,1);
         assert f4 == null;
         System.out.println("Resolution.testFactoring(): successful (null) result: Factor:" + f4);
+        
+        Clause f5 = factor(c5,1,3);
+        assert f5 == null;
+        System.out.println("Resolution.testFactoring(): Expected result: cnf(c2,plain,p(X)|~q|p(a)|p(Y)). Factor:" + f5);
     }
     
     /** ***************************************************************
