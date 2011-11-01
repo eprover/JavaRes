@@ -110,8 +110,11 @@ public class ClauseSet {
         assert clauseres.size() == 0 : "non empty result variable clauseres passed to ClauseSet.getResolutionLiterals()";
         assert indices.size() == 0 : "non empty result variable indices passed to ClauseSet.getResolutionLiterals()";
         for (int i = 0; i < clauses.size(); i++) {
-            clauseres.add(clauses.get(i));
-            indices.add(new Integer(clauses.get(i).length()));
+            Clause c = clauses.get(i);
+            for (int j = 0; j < c.length(); j++) {
+                clauseres.add(clauses.get(i));
+                indices.add(new Integer(j));
+            }
         }
     }
         
