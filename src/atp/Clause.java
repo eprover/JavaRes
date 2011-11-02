@@ -41,9 +41,12 @@ import java.util.*;
 */
 public class Clause {
 
+    public static int clauseIDcounter = 0;
     ArrayList<Literal> literals = new ArrayList<Literal>(); 
-    String type = "";
+    String type = "plain";
     String name = "";
+    ArrayList<String> support = new ArrayList<String>();  // clauses from which this clause is derived
+    String rationale = "input";                           // if not input, reason for derivation
     // evaluation = None
     
     /** ***************************************************************
@@ -55,17 +58,39 @@ public class Clause {
                 Literal.literalList2String(literals) + ").");
         return result.toString();
     }
+    
+    /** ***************************************************************
+     */
+    public String toStringJustify() {
+            
+        StringBuffer result = new StringBuffer();
+        result.append("cnf(" + name + "," + type + "," + 
+                Literal.literalList2String(literals) + ").");
+        if (support.size() > 0) {
+            result.append(":" + rationale + "[");
+            result.append(support.get(0));
+            for (int i = 1; i < support.size(); i++) {
+                result.append(",");
+                result.append(support.get(i));
+            }
+            result.append("]");
+        }
+        return result.toString();
+    }
+    
+    /** ***************************************************************
+     */
+    public void createName() {
+            
+        name = "c" + Integer.toString(clauseIDcounter);
+        clauseIDcounter++;
+    }
 
     /** ***************************************************************
      */
     public Clause deepCopy() {
-        
-        Clause result = new Clause();
-        result.name = name;
-        result.type = type;
-        for (int i = 0; i < literals.size(); i++) 
-            result.literals.add(literals.get(i).deepCopy());
-        return result;
+                
+        return deepCopy(0);
     }
     
     /** ***************************************************************
@@ -76,6 +101,9 @@ public class Clause {
         Clause result = new Clause();
         result.name = name;
         result.type = type;
+        result.rationale = rationale;
+        for (int i = 0; i < support.size(); i++)  
+            result.support.add(support.get(i));
         for (int i = start; i < literals.size(); i++) 
             result.literals.add(literals.get(i).deepCopy());
         return result;
@@ -253,9 +281,8 @@ public class Clause {
      */
     public Clause instantiate(Substitutions subst) {
 
-        Clause newC = new Clause();
-        newC.type = type;
-        newC.name = name;
+        Clause newC = deepCopy();
+        newC.literals = new ArrayList<Literal>();
         for (int i = 0; i < literals.size(); i++)
             newC.literals.add(literals.get(i).instantiate(subst));
         return newC;
