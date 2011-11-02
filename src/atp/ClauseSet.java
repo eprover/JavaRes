@@ -128,8 +128,25 @@ public class ClauseSet {
         while (st.ttype != StreamTokenizer_s.TT_EOF) {
             Clause clause = new Clause();
             clause.parse(st);
-            add(clause);
+            if (clause.literals.size() > 0)
+                add(clause);
         }
         return count;
+    }
+    
+    /** ***************************************************************
+     */
+    public static void main(String[] args) {
+
+        String spec2 = "cnf(axiom, humans_are_mortal, mortal(X)|~human(X)).\n" + 
+        "cnf(axiom, socrates_is_human, human(socrates)).\n" +
+        "cnf(negated_conjecture, is_socrates_mortal, ~mortal(socrates)).\n";
+        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec2));        
+        ClauseSet problem = new ClauseSet();
+        problem.parse(st);
+        System.out.println("ClauseSet test.  Expected: "); 
+        System.out.println(spec2);
+        System.out.println("Actual: ");
+        System.out.println(problem);
     }
 }
