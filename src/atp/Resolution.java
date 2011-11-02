@@ -96,8 +96,13 @@ public class Resolution {
         }
         lits1.addAll(lits2);
         Clause res = new Clause();
+        res.createName();
         res.addAll(lits1);
         res.removeDupLits();
+        res.rationale = "resolution";
+        res.support.add(clause1.name);
+        res.support.add(clause2.name);
+        //System.out.println("INFO in Resolution.resolution(): result " + res.toStringJustify());
         return res;
     }
 
@@ -123,8 +128,11 @@ public class Resolution {
                 lits.add(l.instantiate(sigma));
         }
         Clause res = new Clause();
+        res.createName();
         res.addAll(lits);
         res.removeDupLits();
+        res.rationale = "factoring";
+        res.support.add(clause.name);
         return res;
     }
 
