@@ -47,7 +47,7 @@ public class Clause {
     String name = "";
     ArrayList<String> support = new ArrayList<String>();  // clauses from which this clause is derived
     String rationale = "input";                           // if not input, reason for derivation
-    // evaluation = None
+    ArrayList<Integer> evaluation = null;
     
     /** ***************************************************************
      */
@@ -84,6 +84,13 @@ public class Clause {
             
         name = "c" + Integer.toString(clauseIDcounter);
         clauseIDcounter++;
+    }
+    
+    /** ***************************************************************
+     */
+    public void addEval(ArrayList<Integer> e) {
+            
+        evaluation = e;
     }
 
     /** ***************************************************************
@@ -148,11 +155,13 @@ public class Clause {
         try {
             Term.setupStreamTokenizer(st);
             st.nextToken(); 
+            if (st.ttype == '%')
+                return this;
             if (st.ttype != StreamTokenizer.TT_WORD || !st.sval.equals("cnf"))
                 throw new Exception("\"cnf\" expected.");
             st.nextToken(); 
             if (st.ttype != '(')
-                throw new Exception("Open paren expected.");
+                throw new Exception("Open paren expected. Instead found '" + st.ttype + "' with clause so far " + this);
             st.nextToken(); 
             if (st.ttype == StreamTokenizer.TT_WORD && Character.isLowerCase(st.sval.charAt(0)))
                 name = st.sval;
@@ -160,7 +169,7 @@ public class Clause {
                 throw new Exception("Identifier expected.");
             st.nextToken(); 
             if (st.ttype != ',')
-                throw new Exception("Comma expected.");
+                throw new Exception("Comma expected. Instead found '" + st.ttype + "' with clause so far " + this);
             st.nextToken(); 
             if (st.ttype == StreamTokenizer.TT_WORD && Character.isLowerCase(st.sval.charAt(0))) {                 
                 type = st.sval;
@@ -171,7 +180,7 @@ public class Clause {
                 throw new Exception("Clause type enumeration expected.");
             st.nextToken(); 
             if (st.ttype != ',')
-                throw new Exception("Comma expected.");
+                throw new Exception("Comma expected. Instead found '" + st.ttype + "' with clause so far " + this);
             st.nextToken(); 
             st.pushBack();
             if (st.ttype == '(') {
@@ -179,16 +188,17 @@ public class Clause {
                 literals = Literal.parseLiteralList(st);
                 st.nextToken(); 
                 if (st.ttype != ')')
-                    throw new Exception("Close paren expected.");
+                    throw new Exception("Close paren expected. Instead found '" + st.ttype + "' with clause so far " + this);
             }
             else
                 literals = Literal.parseLiteralList(st);
             //st.nextToken(); 
             if (st.ttype != ')')
-                throw new Exception("Close paren expected.");
+                throw new Exception("Close paren expected. Instead found '" + st.ttype + "' with clause so far " + this);
             st.nextToken(); 
             if (st.ttype != '.')
-                throw new Exception("Period expected.");
+                throw new Exception("Period expected. Instead found '" + st.ttype + "' with clause so far " + this);
+            //System.out.println("INFO in Clause.parse(): completed parsing: " + this);
             return this;
         }
         catch (Exception ex) {
@@ -343,7 +353,8 @@ public class Clause {
                "cnf(test,axiom,(p(a)|p(f(X)))).\n" +
                "cnf(test3,lemma,(p(a)|~p(f(X)))).\n" +
                "cnf(taut,axiom,p(a)|q(a)|~p(a)).\n" +
-               "cnf(dup,axiom,p(a)|q(a)|p(a)).";
+               "cnf(dup,axiom,p(a)|q(a)|p(a)).\n" +
+               "cnf(c6,axiom,f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b)).\n";
     }
     
     /** ***************************************************************
@@ -379,8 +390,16 @@ public class Clause {
         System.out.println(c4);
         
         Clause c5 = new Clause();
-        c5.parse(st); 
+        c5.parse(st);
+        assert c5.toString().equals("cnf(dup,axiom,p(a)|q(a)|p(a)).") : 
+            "Failure. " + c5.toString() + " not equal to cnf(dup,axiom,p(a)|q(a)|p(a)).";
         System.out.println(c5);
+        
+        Clause c6 = new Clause();
+        c6.parse(st);
+        assert c6.toString().equals("cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).") : 
+            "Failure. " + c6.toString() + " not equal to cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).";
+        System.out.println(c6);
     }
     
     /** ***************************************************************
