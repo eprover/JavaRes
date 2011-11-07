@@ -69,9 +69,11 @@ public class Prover2 {
                 File fin  = new File(args[1]);
                 fr = new FileReader(fin);
                 if (fr != null) {
-                    StreamTokenizer_s st = new StreamTokenizer_s(fr);               
+                    StreamTokenizer_s st = new StreamTokenizer_s(fr);  
+                    Term.setupStreamTokenizer(st);
                     ClauseSet cs = new ClauseSet();
                     cs.parse(st);
+                    ClauseEvaluationFunction.setupEvaluationFunctions();
                     ProofState state = new ProofState(cs,ClauseEvaluationFunction.PickGiven5);
                     if (args[0].equals("-t") || args[0].equals("--delete-tautologies"))
                         state.delete_tautologies = true;
@@ -87,8 +89,8 @@ public class Prover2 {
                         System.out.println("# SZS status Satisfiable");
                 }
             }
-            catch (Exception e) {
-                System.out.println("Error in Hotel.readJSONHotels(): File error reading " + args[1] + ": " + e.getMessage());
+            catch (IOException e) {
+                System.out.println("Error in Prover2.main(): File error reading " + args[1] + ": " + e.getMessage());
                 return;
             }
             finally {
@@ -96,7 +98,7 @@ public class Prover2 {
                     if (fr != null) fr.close();
                 }
                 catch (Exception e) {
-                    System.out.println("Exception in readJSONHotels()" + e.getMessage());
+                    System.out.println("Exception in Prover2.main()" + e.getMessage());
                 }
             }                        
         }
