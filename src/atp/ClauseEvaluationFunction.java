@@ -165,6 +165,13 @@ public class ClauseEvaluationFunction {
         int e6 = eval.hEval(c6);
         int e7 = eval.hEval(c7);
         int e8 = eval.hEval(c8);
+        System.out.println("ClauseEvaluationFunction.testFIFO(): Expecting " + e1 + " < " + e2);
+        System.out.println(e2 + " < " + e3);
+        System.out.println(e3 + " < " + e4);
+        System.out.println(e4 + " < " + e5);
+        System.out.println(e5 + " < " + e6);
+        System.out.println(e6 + " < " + e7);
+        System.out.println(e7 + " < " + e8);
         
         assert e1 < e2;
         assert e2 < e3;
