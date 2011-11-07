@@ -64,6 +64,8 @@ public class Literal {
         
          assert !l_obj.getClass().getName().equals("Literal") : "Literal.equals() passed object not of type Literal"; 
          Literal l = (Literal) l_obj;
+         if (negated != l.negated)
+             return false;
          if (!lhs.equals(l.lhs))
              return false;
          if (!StringUtil.emptyString(op)) {
@@ -216,9 +218,12 @@ public class Literal {
                  rhs = new Term();
 
                  //System.out.println("INFO in Literal.parseAtom(): (2) token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
-                 rhs = rhs.parse(st);    
+                 rhs = rhs.parse(st); 
+                 if (st.ttype != st.TT_EOF)
+                     st.nextToken();
              }
-             //System.out.println("Exiting Literal.parseAtom(): " + this);
+             //System.out.println("Exiting Literal.parseAtom(): result: " + this);
+             //System.out.println("Exiting Literal.parseAtom(): token: " + st.ttype);
              return this;
          }
          catch (Exception ex) {
@@ -376,16 +381,18 @@ public class Literal {
      public static String input3 = "$false";
      public static String input4 = "$false|~q(f(X,a), b)|$false";
      public static String input5 = "p(a)|p(f(X))";
+     public static String input6 = "foo(bar,vaz)|f(X1,X2)!=g(X4,X5)|k(X1,X1)!=k(a,b)";
          
      /** ***************************************************************
       * Setup function for clause/literal unit tests. Initialize
       * variables needed throughout the tests.
       */
      public static void setup() {
-         
-         a1 = new Literal();
+                  
          StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(input1));
          Term.setupStreamTokenizer(st);
+         
+         a1 = new Literal();
          a1 = a1.parseLiteral(st);
          System.out.println("INFO in Literal.setup(): finished parsing a1: " + a1);
          
@@ -411,7 +418,7 @@ public class Literal {
          
          a7 = new Literal();
          a7 = a7.parseLiteral(st);
-         System.out.println("INFO in Literal.setup(): finished parsing a7: " + a7);
+         System.out.println("INFO in Literal.setup(): finished parsing a7: " + a7);         
      }
      
      /** ***************************************************************
@@ -498,14 +505,15 @@ public class Literal {
          
          System.out.println("input2: " + input2);
          StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(input2));
-         Term.setupStreamTokenizer(st);
+         Term.setupStreamTokenizer(st);                                 
          ArrayList<Literal> l2 = parseLiteralList(st);
          System.out.println(l2);
          System.out.println(l2.size() == 5); 
          System.out.println();
-         
+       
          System.out.println("input3: " + input3);
          st = new StreamTokenizer_s(new StringReader(input3));
+         Term.setupStreamTokenizer(st);
          ArrayList<Literal> l3 = parseLiteralList(st);
          System.out.println(l3);
          System.out.println(l3.size() == 0); 
@@ -513,6 +521,7 @@ public class Literal {
          
          System.out.println("input4: " + input4);
          st = new StreamTokenizer_s(new StringReader(input4));
+         Term.setupStreamTokenizer(st);
          ArrayList<Literal> l4 = parseLiteralList(st);
          System.out.println(l4);
          System.out.println(l4.size() == 1);     
@@ -520,9 +529,18 @@ public class Literal {
          
          System.out.println("input5: " + input5);
          st = new StreamTokenizer_s(new StringReader(input5));
+         Term.setupStreamTokenizer(st);
          ArrayList<Literal> l5 = parseLiteralList(st);
          System.out.println(l5);
-         System.out.println(l5.size() == 2);  
+         System.out.println(l5.size() == 2);
+         System.out.println();         
+         
+         System.out.println("input6: " + input6);
+         st = new StreamTokenizer_s(new StringReader(input6));
+         Term.setupStreamTokenizer(st);
+         ArrayList<Literal> l6 = parseLiteralList(st);
+         System.out.println(l6);
+         System.out.println(l6.size() == 3);  
      }
      
      /** ***************************************************************
@@ -536,11 +554,11 @@ public class Literal {
      */
     public static void main(String[] args) {
         
-        setup();
-        testLiterals();
-        testLitWeight();
+        //setup();
+        //testLiterals();
+        //testLitWeight();
         testLitList();
-        testInstantiate();
+        //testInstantiate();
     }
 
 }
