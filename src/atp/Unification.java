@@ -30,7 +30,7 @@ public class Unification {
      * the term t. If that is the case (and t != x), the two can never be
      * unified.   
      */
-    public static boolean occursCheck(Term x, Term t) {
+    private static boolean occursCheck(Term x, Term t) {
 
        if (t.termIsCompound()) {
             for (int i = 0; i < t.subterms.size(); i++)
@@ -46,7 +46,7 @@ public class Unification {
      * Unify all terms in term1 with the corresponding terms in term2 with a
      * common substitution variable "subst".   
      */
-    public static Substitutions mguTermList(Term term1, Term term2) {
+    private static Substitutions mguTermList(Term term1, Term term2) {
 
         //System.out.println("INFO in Unification.mguTermList(): attempting to unify " + term1 + " and " + term2);
         Substitutions subst = new Substitutions();
