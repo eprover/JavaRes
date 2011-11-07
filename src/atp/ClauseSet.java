@@ -29,7 +29,7 @@ import java.util.*;
  */    
 public class ClauseSet {
 
-    ArrayList<Clause> clauses = new ArrayList<Clause>();
+    public ArrayList<Clause> clauses = new ArrayList<Clause>();
              
     /** ***************************************************************
      * Return a string representation of the clause set.
@@ -55,6 +55,8 @@ public class ClauseSet {
      */ 
     public Clause get(int i) {
 
+        assert i < clauses.size() : "index out of bounds: " + Integer.toString(i) + 
+                                    " with clause list length: " + Integer.toString(clauses.size());
         return clauses.get(i);
     }
     
@@ -88,11 +90,8 @@ public class ClauseSet {
      */ 
    public Clause extractFirst() {
 
-       if (clauses.size() > 0) {
-           Clause result = clauses.get(0);
-           clauses.remove(result); 
-           return result;
-       }
+       if (clauses.size() > 0) 
+           return clauses.remove(0);        
        else
            return null;
    }
@@ -132,6 +131,39 @@ public class ClauseSet {
                 add(clause);
         }
         return count;
+    }
+    
+    /** ***************************************************************
+     * Parse a clause set from a file.
+     */ 
+    public static ClauseSet parseFromFile(String filename) {
+            
+        if (!StringUtil.emptyString(filename)) {
+            FileReader fr = null;
+            try {
+                File fin  = new File(filename);
+                fr = new FileReader(fin);
+                if (fr != null) {
+                    StreamTokenizer_s st = new StreamTokenizer_s(fr);               
+                    ClauseSet cs = new ClauseSet();
+                    cs.parse(st);
+                    return cs;
+                }
+            }
+            catch (Exception e) {
+                System.out.println("Error in Hotel.readJSONHotels(): File error reading " + filename + ": " + e.getMessage());
+                return null;
+            }
+            finally {
+                try {
+                    if (fr != null) fr.close();
+                }
+                catch (Exception e) {
+                    System.out.println("Exception in readJSONHotels()" + e.getMessage());
+                }
+            }                
+        }   
+        return null;
     }
     
     /** ***************************************************************
