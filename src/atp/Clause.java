@@ -354,7 +354,7 @@ public class Clause {
                "cnf(test3,lemma,(p(a)|~p(f(X)))).\n" +
                "cnf(taut,axiom,p(a)|q(a)|~p(a)).\n" +
                "cnf(dup,axiom,p(a)|q(a)|p(a)).\n" +
-               "cnf(c6,axiom,f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b)).\n";
+               "cnf(c6,axiom,f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b)).\n";       
     }
     
     /** ***************************************************************
@@ -365,6 +365,8 @@ public class Clause {
         System.out.println("INFO in Clause.testClauses(): expected results: \n" + str1);
         System.out.println("results:");
         StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(str1));
+        Term.setupStreamTokenizer(st);
+                
         Clause c1 = new Clause();        
         c1.parse(st);
         assert c1.toString().equals("cnf(test,axiom,p(a)|p(f(X))).") : 
@@ -394,7 +396,7 @@ public class Clause {
         assert c5.toString().equals("cnf(dup,axiom,p(a)|q(a)|p(a)).") : 
             "Failure. " + c5.toString() + " not equal to cnf(dup,axiom,p(a)|q(a)|p(a)).";
         System.out.println(c5);
-        
+  
         Clause c6 = new Clause();
         c6.parse(st);
         assert c6.toString().equals("cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).") : 
