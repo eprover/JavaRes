@@ -330,7 +330,7 @@ public class Clause {
         if (literals.size() < 2)
             return false;
         for (int i = 0; i < literals.size(); i++) {
-            for (int j = 1; j < literals.size(); i++) {
+            for (int j = 1; j < literals.size(); j++) {
                 if (literals.get(i).isOpposite(literals.get(j)))
                     return true;
             }
