@@ -99,7 +99,7 @@ public class ProofState {
 
         Clause given_clause = unprocessed.extractBest();
         given_clause = given_clause.freshVarCopy();
-        System.out.println("#" + given_clause);
+        System.out.println("#" + given_clause.toStringJustify());
         if (given_clause.isEmpty())
             // We have found an explicit contradiction
             return given_clause;
@@ -238,7 +238,7 @@ public class ProofState {
         System.out.println("INFO in ProofState.testSaturation()");
         evalSatResult(spec1, true);
         evalSatResult(ClauseSet.parseFromFile("/home/apease/EProver/fod_pi/PYTHON/EXAMPLES/PUZ001-1.p"), true);
-        evalSatResult(spec3, false);
+        //evalSatResult(spec3, false);
     }
     
     /** ***************************************************************
