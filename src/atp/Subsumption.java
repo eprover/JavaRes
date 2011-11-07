@@ -63,10 +63,10 @@ public class Subsumption {
     /** ***************************************************************
      * Return True if any clause from set subsumes clause, False otherwise.
      */ 
-    public static boolean forwardSubsumption(ArrayList<Clause> set, Clause clause) {
+    public static boolean forwardSubsumption(ClauseSet cs, Clause clause) {
 
-        for (int i = 0; i < set.size(); i++) {
-            Clause c = set.get(i);
+        for (int i = 0; i < cs.length(); i++) {
+            Clause c = cs.get(i);
             if (subsumes(c, clause))
                 return true;
         }
@@ -76,18 +76,18 @@ public class Subsumption {
     /** ***************************************************************
      * Remove all clauses that are subsumed by clause from set.
      */ 
-    public static int backwardSubsumption(Clause clause, ArrayList<Clause> set) {
+    public static int backwardSubsumption(Clause clause, ClauseSet cs) {
 
         ArrayList<Clause> subsumed_set = new ArrayList<Clause>();
-        for (int i = 0; i < set.size(); i++) {
-            Clause c = set.get(i);
+        for (int i = 0; i < cs.length(); i++) {
+            Clause c = cs.get(i);
             if (subsumes(clause, c))
                 subsumed_set.add(c);        
         }
         int res = subsumed_set.size();
         for (int i = 0; i < subsumed_set.size(); i++) {
             Clause c = subsumed_set.get(i);
-            set.remove(c);   // revise to extractClause() when clause set implemented
+            cs.extractClause(c);
         }
         return res;
     }
