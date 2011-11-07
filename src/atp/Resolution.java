@@ -65,7 +65,8 @@ public class Resolution {
      */
     public static Clause resolution(Clause clause1, int lit1, Clause clause2, int lit2) {
 
-        //System.out.println("INFO in Resolution.resolution(): " + clause1 + " " + lit1 + " " + clause2 + " " + lit2);
+        //System.out.println("INFO in Resolution.resolution(): resolving (clause1, lit1, clause2, lit2): " + 
+        //        clause1 + " " + lit1 + " " + clause2 + " " + lit2);
         Literal l1 = clause1.getLiteral(lit1);
         assert l1 != null;
         Literal l2 = clause2.getLiteral(lit2);
@@ -80,21 +81,29 @@ public class Resolution {
             return null;
         ArrayList<Literal> lits1 = new ArrayList<Literal> ();
        
-        //System.out.println("INFO in Resolution.resolution(): clause size " + clause1.literals.size());
+        //System.out.println("INFO in Resolution.resolution(): clause1 size " + clause1.literals.size());
+        //System.out.println("INFO in Resolution.resolution(): literal 11 " + l1);
         for (int i = 0; i < clause1.literals.size(); i++) {
-            Literal l =  clause1.literals.get(i); 
+            Literal l = clause1.literals.get(i); 
             //System.out.println("INFO in Resolution.resolution(): literal " + l);
             if (!l.equals(l1))
                 lits1.add(l.instantiate(sigma));
             //System.out.println("INFO in Resolution.resolution(): literals " + lits1);
         }
+        
+        //System.out.println("INFO in Resolution.resolution(): clause2 size " + clause2.literals.size());
+        //System.out.println("INFO in Resolution.resolution(): literal 12 " + l2);
         ArrayList<Literal> lits2 = new ArrayList<Literal> ();
         for (int i = 0; i < clause2.literals.size(); i++) {
-            Literal l =  clause2.literals.get(i); 
+            Literal l = clause2.literals.get(i); 
+            //System.out.println("INFO in Resolution.resolution(): literal " + l);
             if (!l.equals(l2))
                 lits2.add(l.instantiate(sigma));
+            //System.out.println("INFO in Resolution.resolution(): literals " + lits1);
         }
+        //System.out.println("INFO in Resolution.resolution(): uncombined literals " + lits1 + " " + lits2);
         lits1.addAll(lits2);
+        //System.out.println("INFO in Resolution.resolution(): combined literals " + lits1);
         Clause res = new Clause();
         res.createName();
         res.addAll(lits1);
@@ -144,6 +153,8 @@ public class Resolution {
     public static Clause c3 = new Clause();
     public static Clause c4 = new Clause();
     public static Clause c5 = new Clause();
+    public static Clause c6 = new Clause();
+    public static Clause c7 = new Clause();
     
     /** ***************************************************************
      * Setup function for resolution testing
@@ -156,6 +167,7 @@ public class Resolution {
            "cnf(c4,axiom,p(X,X)|p(a,f(Y))).\n" +
            "cnf(ftest,axiom,p(X)|~q|p(a)|~q|p(Y)).";
        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec));
+       Term.setupStreamTokenizer(st);
        c1.parse(st);
        c2.parse(st);
        c3.parse(st);
@@ -169,13 +181,20 @@ public class Resolution {
        System.out.println(c3);
        System.out.println(c4);
        System.out.println(c5); 
+       
+       String spec2 = "cnf(not_p,axiom,~p(a)).\n" + 
+       "cnf(taut,axiom,p(X4)|~p(X4)).\n";
+       st = new StreamTokenizer_s(new StringReader(spec2));
+       Term.setupStreamTokenizer(st);
+       c6.parse(st);
+       c7.parse(st);
     }
     
     /** ***************************************************************
      * Test resolution
      */
     public static void testResolution() {
-
+        
         System.out.println("Resolution.testResolution()");
         Clause res1 = resolution(c1, 0, c2,0);
         assert res1 != null;
@@ -191,7 +210,11 @@ public class Resolution {
 
         Clause res4 = resolution(c1, 0, c3,1);
         assert res4 == null;
-        System.out.println("Resolution.testResolution(): successful (null) result: " + res4);
+        System.out.println("Resolution.testResolution(): successful (null) result: " + res4);        
+        
+        Clause res5 = resolution(c6, 0, c7,0);
+        assert res5 != null;
+        System.out.println("Resolution.testResolution(): cnf(~p(a)) successful result: " + res5);
     }
     
     /** ***************************************************************
