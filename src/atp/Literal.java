@@ -361,8 +361,12 @@ public class Literal {
 
          if (this.isNegative() != other.isNegative())
              return false;
-         else
-             return subst.match(lhs, other.lhs);
+         else {
+             if (op != "=")
+                 return subst.match(lhs, other.lhs);
+             else 
+                 return subst.match(lhs, other.lhs) && subst.match(rhs, other.rhs);             
+         }
      }
      
      /** ***************************************************************
