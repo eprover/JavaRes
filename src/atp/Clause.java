@@ -47,7 +47,7 @@ public class Clause {
     String name = "";
     ArrayList<String> support = new ArrayList<String>();  // clauses from which this clause is derived
     String rationale = "input";                           // if not input, reason for derivation
-    ArrayList<Integer> evaluation = null;
+    ArrayList<Integer> evaluation = null;  // Must be the same order as clause evaluation function list in EvalStructure
     
     /** ***************************************************************
      */
