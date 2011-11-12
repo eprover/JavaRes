@@ -25,7 +25,6 @@ MA  02111-1307 USA
 */
 
 package atp;
-import com.articulate.sigma.*;
 
 import java.io.*;
 import java.util.*;
