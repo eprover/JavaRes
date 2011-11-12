@@ -18,8 +18,6 @@ MA  02111-1307 USA
 */
 
 package atp;
-import com.articulate.sigma.*;
-
 import java.io.*;
 import java.util.*;
 
@@ -138,7 +136,7 @@ public class ClauseSet {
      */ 
     public static ClauseSet parseFromFile(String filename) {
             
-        if (!StringUtil.emptyString(filename)) {
+        if (filename != null && filename != "") {
             FileReader fr = null;
             try {
                 File fin  = new File(filename);
