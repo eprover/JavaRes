@@ -18,10 +18,8 @@ MA  02111-1307 USA
 */
 
 package atp;
-import com.articulate.sigma.*;
 
 import java.io.*;
-import java.util.*;
 
 public class Prover1 {
     
@@ -33,7 +31,7 @@ public class Prover1 {
         if (args[0].equals("-h") || args[0].equals("--help"))
             System.out.println();
         else {
-            if (!StringUtil.emptyString(args[0])) {
+            if (!Term.emptyString(args[0])) {
                 ClauseSet problem = new ClauseSet();
                 FileReader fr = null;
                 try {
