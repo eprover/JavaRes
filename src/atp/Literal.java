@@ -20,13 +20,7 @@ MA  02111-1307 USA
 
 package atp;
 
-import atp.Parser.Formula;
-
-import com.articulate.sigma.*;
-import com.articulate.sigma.STP2.FormulaRating;
-
 import java.io.*;
-import java.text.ParseException;
 import java.util.*;
 
 /** ***************************************************************
@@ -47,7 +41,7 @@ public class Literal {
          StringBuffer result = new StringBuffer();
          if (negated)
              result.append("~");
-         if (!StringUtil.emptyString(op)) {
+         if (!Term.emptyString(op)) {
              if (op.equals("=") || op.equals("!="))
                  result.append(lhs + op + rhs);
              else
@@ -68,14 +62,14 @@ public class Literal {
              return false;
          if (!lhs.equals(l.lhs))
              return false;
-         if (!StringUtil.emptyString(op)) {
+         if (!Term.emptyString(op)) {
              if (!op.equals(l.op))
                  return false;
              if (!rhs.equals(l.rhs))
                  return false;
          }
          else
-             if (!StringUtil.emptyString(l.op))
+             if (!Term.emptyString(l.op))
                  return false;
          return true;
      }
@@ -108,7 +102,7 @@ public class Literal {
       */
      public boolean isOpposite(Literal other) {
 
-         if (StringUtil.emptyString(op))
+         if (Term.emptyString(op))
              return this.isNegative() != other.isNegative() &&
                   lhs.equals(other.lhs);
          else {
@@ -137,7 +131,7 @@ public class Literal {
       */
      public boolean isEquational() {
       
-         return !StringUtil.emptyString(op);
+         return !Term.emptyString(op);
      }
      
      /** ***************************************************************
@@ -159,7 +153,7 @@ public class Literal {
          Literal newLit = new Literal();
          newLit.negated = negated;
          newLit.lhs = subst.apply(lhs);
-         if (!StringUtil.emptyString(op))
+         if (!Term.emptyString(op))
              newLit.rhs = subst.apply(rhs); 
          return newLit;
      }
@@ -176,7 +170,7 @@ public class Literal {
      public int weight(int fweight, int vweight) {
                  
          int result = 0;
-         if (!StringUtil.emptyString(op))
+         if (!Term.emptyString(op))
              result = result + fweight;
          if (lhs != null)
              result = result + lhs.termWeight(fweight, vweight);
@@ -298,7 +292,7 @@ public class Literal {
                  //System.out.println("INFO in Literal.parseLiteralList(): (post loop result): " + l);
                  //System.out.println("INFO in Literal.parseLiteralList(): (post loop result): " + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
 
-                 if (!l.toString().equals("$false") && !StringUtil.emptyString(l.toString())) 
+                 if (!l.toString().equals("$false") && !Term.emptyString(l.toString())) 
                      res.add(l);                                   
              }
              return res;
