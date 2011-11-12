@@ -19,10 +19,8 @@ MA  02111-1307 USA
 */
 
 package atp;
-import com.articulate.sigma.*;
 
 import java.io.*;
-import java.text.ParseException;
 import java.util.*;
 
 /** ***************************************************************
@@ -38,6 +36,17 @@ public class Term {
 public String t = "";  // lowercase is a constant, uppercase is a variable
 public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not composite
 
+    /** ***************************************************************
+     * @param s An input Object, expected to be a String.
+     * @return true if s == null or s is an empty String, else false.
+     */
+    public static boolean emptyString(Object s) {
+    
+        return ((s == null)
+                || ((s instanceof String)
+                    && s.equals("")));
+    }
+    
     /** ***************************************************************
      */
     public String toString() {
@@ -201,7 +210,7 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
      */
     public boolean termIsGround() { 
         
-        if (!StringUtil.emptyString(t) && Character.isUpperCase(t.charAt(0)))
+        if (!Term.emptyString(t) && Character.isUpperCase(t.charAt(0)))
             return false;
         for (int i = 0; i < subterms.size(); i++)
             if (!subterms.get(i).termIsGround())

@@ -20,14 +20,14 @@ package atp;
 
 import java.io.StringReader;
 import java.util.*;
-import atp.*;
-import com.articulate.sigma.*;
 
 public class Subsumption {
     
     /** ***************************************************************
      * Try to extend subst so that subst(subsumer) is a multi-subset of
-     * subsumed.
+     * subsumed. Recursively call this routine, checking the first literal
+     * of subsumer for a match with subsumed, then calling again with 
+     * the first literal removed.
      */ 
     public static boolean subsumeLitLists(Clause subsumer, 
             Clause subsumed, BacktrackSubstitution subst) {
@@ -38,7 +38,7 @@ public class Subsumption {
             int btstate = subst.getState();
             if (subsumer.literals.get(0).match(subsumed.literals.get(i), subst)) {
                 Clause rest = new Clause();
-                for (int j = 0;j < subsumer.literals.size(); j++)
+                for (int j = 0; j < subsumer.literals.size(); j++)
                     if (subsumer.literals.get(j) != subsumed.literals.get(i))
                         rest.literals.add(subsumer.literals.get(j));
                 if (subsumeLitLists(subsumer.deepCopy(1), rest, subst))

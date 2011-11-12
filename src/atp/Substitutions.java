@@ -37,12 +37,7 @@ MA  02111-1307 USA
 */
 
 package atp;
-import java.io.StringReader;
 import java.util.*;
-
-import atp.Term;
-
-import com.articulate.sigma.StreamTokenizer_s;
 
 public class Substitutions {
 

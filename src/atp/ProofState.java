@@ -30,7 +30,6 @@ MA  02111-1307 USA
 */
 package atp;
 import java.io.*;
-import com.articulate.sigma.*;
 
 /** ***************************************************************       
  * Top-level data structure for the prover. The complete knowledge

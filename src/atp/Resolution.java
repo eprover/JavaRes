@@ -49,7 +49,6 @@ MA  02111-1307 USA
 */
 
 package atp;
-import com.articulate.sigma.*;
 
 import java.io.*;
 import java.util.*;    
@@ -130,7 +129,7 @@ public class Resolution {
         Substitutions sigma = Unification.mgu(l1.lhs, l2.lhs);
         if (sigma == null)
             return null;
-        ArrayList<Literal> lits = new ArrayList<Literal> ();
+        ArrayList<Literal> lits = new ArrayList<Literal>();
         for (int i = 0; i < clause.literals.size(); i++) {
             Literal l =  clause.literals.get(i); 
             //if (!l.equals(l2))

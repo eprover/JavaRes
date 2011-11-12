@@ -18,10 +18,7 @@
     */
 package atp;
 
-import java.io.StringReader;
 import java.util.*;
-import atp.*;
-import com.articulate.sigma.*;
 
 public class Unification {
   
