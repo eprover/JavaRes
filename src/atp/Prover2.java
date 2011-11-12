@@ -18,10 +18,8 @@ along with this program ; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston,
 MA  02111-1307 USA 
 */
-import com.articulate.sigma.*;
 
 import java.io.*;
-import java.util.*;
 
 public class Prover2 {
     
@@ -62,7 +60,7 @@ public class Prover2 {
             System.out.println(doc);
             return;
         }
-        if (!StringUtil.emptyString(args[0])) {
+        if (!Term.emptyString(args[0])) {
             ClauseSet problem = new ClauseSet();
             FileReader fr = null;
             try {
