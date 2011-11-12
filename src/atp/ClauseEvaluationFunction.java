@@ -31,8 +31,6 @@ MA  02111-1307 USA
 package atp;
 import java.io.*;
 import java.util.*;
-import atp.*;
-import com.articulate.sigma.*;
 
 /** ***************************************************************
  *  A class representing a clause evaluation function. This is a pure
@@ -41,7 +39,7 @@ import com.articulate.sigma.*;
  *  to be able to store information, either from initialization, or
  *  from previous calls.
  */  
-public class ClauseEvaluationFunction {
+public abstract class ClauseEvaluationFunction {
                 
     public static String name = "Virtual Base";
                 
