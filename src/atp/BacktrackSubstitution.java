@@ -10,15 +10,12 @@ the Free Software Foundation; either version 2 of the License, or
  A substitution that does not allow composition of new bindings, but
  in exchange offers backtrackability. Bindings are recorded in two
  data structures:
-    self.subst is a dictionary that maps variables to terms
-    self.bindings is an ordered list of bindings.
+    subst (defined in the parent class Substitutions) is a dictionary that maps variables to terms
+    bindings is an ordered list of bindings.
 */
 
 import java.io.StringReader;
 import java.util.*;
-
-import atp.Term;
-import com.articulate.sigma.StreamTokenizer_s;
 
 public class BacktrackSubstitution extends Substitutions {
 
