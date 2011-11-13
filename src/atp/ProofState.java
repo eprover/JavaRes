@@ -30,6 +30,7 @@ MA  02111-1307 USA
 */
 package atp;
 import java.io.*;
+import java.util.*;
 
 /** ***************************************************************       
  * Top-level data structure for the prover. The complete knowledge
@@ -69,6 +70,8 @@ public class ProofState {
     public static int tautologies_deleted  = 0;
     public static int forward_subsumed     = 0;
     public static int backward_subsumed    = 0;
+    
+    public static int stepCount            = 999;
     
     /** ***************************************************************
      * Initialize the proof state with a set of clauses.
@@ -171,6 +174,84 @@ public class ProofState {
         sb.append("# Forward subsumed   : " + forward_subsumed + "\n");
         sb.append("# Backward subsumed  : " + backward_subsumed + "\n");
         return sb.toString();
+    }
+   
+    /** ***************************************************************
+     */  
+    public String proof2String(TreeMap<String,Clause> proof, HashMap<String,String> nameMap) {
+    
+        StringBuffer sb = new StringBuffer();
+        Iterator<String> it = proof.keySet().iterator();
+        while (it.hasNext()) {
+            String key = it.next();
+            Clause c = proof.get(key);
+            c.name = nameMap.get(c.name);
+            for (int i = 0; i < c.support.size(); i++) 
+                c.support.set(i,nameMap.get(c.support.get(i)));            
+            sb.append(String.format("%-5s", (key + ".")) + "\t" + c.toStringJustify() + "\n");
+        }
+        return sb.toString();
+    }
+    
+    /** ***************************************************************
+     */  
+    public void renumber(TreeMap<String,Clause> proof, HashMap<String,String> nameMap) {
+    
+        int counter = 0;
+        StringBuffer sb = new StringBuffer();
+        Iterator<String> it = proof.keySet().iterator();
+        while (it.hasNext()) {
+            String key = it.next();
+            Clause c = proof.get(key);
+            c.name = nameMap.get(c.name);
+            for (int i = 0; i < c.support.size(); i++) 
+                c.support.set(i,nameMap.get(c.support.get(i))); 
+            nameMap.put(key, Integer.toString(counter++));
+        }
+    }
+    
+    /** ***************************************************************
+     * @param proof is built as a side-effect
+     */  
+    public void generateProofRecurse(HashMap<String,Clause> clauseMap, HashMap<String,String> nameMap,
+            Clause c, TreeMap<String,Clause> proof) {
+        
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < c.support.size(); i++) {
+            Clause newC = clauseMap.get(c.support.get(i));
+            if (newC != null) {
+                if (!proof.containsValue(newC)) {
+                    stepCount--;
+                    String newName = "step" + String.format("%5s", Integer.toString(stepCount)).replace(' ', '0');
+                    nameMap.put(newC.name, newName);
+                    proof.put(newName, newC);
+                    generateProofRecurse(clauseMap,nameMap,newC,proof);
+                }
+            }
+            else
+                System.out.println("Error in : attempt to get non-existent clause: " + c.support.get(i));
+        }
+    }
+
+    /** ***************************************************************
+     * Return the proof.
+     */  
+    public String generateProof(Clause res) {
+
+        HashMap<String,Clause> clauseMap = new HashMap<String,Clause>();
+        for (int i = 0; i < processed.length(); i++) {
+            Clause c = processed.get(i);
+            clauseMap.put(c.name, c);
+        }
+        StringBuffer sb = new StringBuffer();
+        TreeMap<String,Clause> proof = new TreeMap<String,Clause>();
+        HashMap<String,String> nameMap = new HashMap<String,String>();
+        String newName = "step" + String.format("%5s", Integer.toString(stepCount)).replace(' ', '0');
+        nameMap.put(res.name, newName);
+        proof.put(newName, res);
+        generateProofRecurse(clauseMap,nameMap,res,proof);
+        renumber(proof,nameMap);
+        return proof2String(proof,nameMap);
     }
     
     /** ***************************************************************
