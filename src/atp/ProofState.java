@@ -188,7 +188,7 @@ public class ProofState {
             c.name = nameMap.get(c.name);
             for (int i = 0; i < c.support.size(); i++) 
                 c.support.set(i,nameMap.get(c.support.get(i)));            
-            sb.append(String.format("%-5s", (key + ".")) + "\t" + c.toStringJustify() + "\n");
+            sb.append(String.format("%-5s", (nameMap.get(key) + ".")) + "\t" + c.toStringJustify() + "\n");
         }
         return sb.toString();
     }
@@ -197,7 +197,7 @@ public class ProofState {
      */  
     public void renumber(TreeMap<String,Clause> proof, HashMap<String,String> nameMap) {
     
-        int counter = 0;
+        int counter = 1;
         StringBuffer sb = new StringBuffer();
         Iterator<String> it = proof.keySet().iterator();
         while (it.hasNext()) {
