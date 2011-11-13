@@ -81,8 +81,10 @@ public class Prover2 {
                         state.backward_subsumption = true;
                     Clause res = state.saturate();
                     System.out.println(state.generateStatisticsString());
-                    if (res != null)
+                    if (res != null) {
                         System.out.println("# SZS status Unsatisfiable");
+                        System.out.println(state.generateProof(res));
+                    }
                     else
                         System.out.println("# SZS status Satisfiable");
                 }
