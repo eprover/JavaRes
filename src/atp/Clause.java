@@ -65,7 +65,7 @@ public class Clause {
         result.append("cnf(" + name + "," + type + "," + 
                 Literal.literalList2String(literals) + ").");
         if (support.size() > 0) {
-            result.append(":" + rationale + "[");
+            result.append(" : " + rationale + "[");
             result.append(support.get(0));
             for (int i = 1; i < support.size(); i++) {
                 result.append(",");
@@ -171,8 +171,8 @@ public class Clause {
             st.nextToken(); 
             if (st.ttype == StreamTokenizer.TT_WORD && Character.isLowerCase(st.sval.charAt(0))) {                 
                 type = st.sval;
-                if (!type.equals("axiom") && !type.equals("negated_conjecture"))
-                   type = "plain";
+                //if (!type.equals("axiom") && !type.equals("negated_conjecture"))
+                //   type = "plain";
             }
             else 
                 throw new Exception("Clause type enumeration expected.");
