@@ -83,7 +83,7 @@ public class Prover2 {
                     System.out.println(state.generateStatisticsString());
                     if (res != null) {
                         System.out.println("# SZS status Unsatisfiable");
-                        System.out.println(state.generateProof(res));
+                        System.out.println(state.generateProof(res,false));
                     }
                     else
                         System.out.println("# SZS status Satisfiable");
