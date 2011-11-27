@@ -29,7 +29,7 @@ public class Subsumption {
      * of subsumer for a match with subsumed, then calling again with 
      * the first literal removed.
      */ 
-    public static boolean subsumeLitLists(Clause subsumer, 
+    private static boolean subsumeLitLists(Clause subsumer, 
             Clause subsumed, BacktrackSubstitution subst) {
 
         if (subsumer == null || subsumer.literals.size() < 1)
@@ -52,7 +52,7 @@ public class Subsumption {
     /** ***************************************************************
      * Return True if subsumer subsumes subsumed, False otherwise.
      */ 
-    public static boolean subsumes(Clause subsumer, Clause subsumed) {
+    private static boolean subsumes(Clause subsumer, Clause subsumed) {
 
         if (subsumer.literals.size() > subsumed.literals.size())
             return false;
