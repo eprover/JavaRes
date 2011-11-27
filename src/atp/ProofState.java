@@ -175,83 +175,228 @@ public class ProofState {
         sb.append("# Backward subsumed  : " + backward_subsumed + "\n");
         return sb.toString();
     }
-   
+    
+    /** ***************************************************************
+     * Get all clauses used in the proof
+     */  
+    public HashMap<String,Clause> searchProof(HashMap<String,Clause> clauseMap, Clause source) {
+        
+        HashMap<String,Clause> proof = new HashMap<String,Clause>();
+        proof.put(source.name,source);
+        for (int i = 0; i < source.support.size(); i++) {
+            Clause w = clauseMap.get(source.support.get(i));
+            proof.putAll(searchProof(clauseMap,w));
+        }
+        return proof;
+    }
+       
     /** ***************************************************************
      */  
-    public String proof2String(TreeMap<String,Clause> proof, HashMap<String,String> nameMap) {
+    public class GraphNode {
+        String name = null;
+          //list of nodes that this node supports
+        ArrayList<String> pointersToNodes = new ArrayList<String>();
+        ArrayList<String> pointersFromNodes = new ArrayList<String>();
+        
+        public String toString() {
+            StringBuffer sb = new StringBuffer();
+            sb.append(name + " \n");
+            sb.append("    (");
+            for (int i = 0; i < pointersToNodes.size(); i++) {
+                sb.append(pointersToNodes.get(i));
+                if (i < pointersToNodes.size() - 1)
+                    sb.append(",");
+            }
+            sb.append(")\n");
+            sb.append("    (");
+            for (int i = 0; i < pointersFromNodes.size(); i++) {
+                sb.append(pointersFromNodes.get(i));
+                if (i < pointersFromNodes.size() - 1)
+                    sb.append(",");
+            }
+            sb.append(")\n");               
+            return sb.toString();
+        }
+    }
+
+    /** *************************************************************** 
+     */  
+    public String dotGraph(HashMap<String,GraphNode> graph) {
+    
+        StringBuffer sb = new StringBuffer();
+        sb.append("digraph \"inference tree\" {\n");
+        Iterator<String> it = graph.keySet().iterator();
+        while (it.hasNext()) {
+            String key = it.next();
+            GraphNode gn = graph.get(key);
+            sb.append(gn.name + " [shape=box];\n");
+            for (int i = 0; i < gn.pointersToNodes.size(); i++) {
+                sb.append(gn.name + " -> " + gn.pointersToNodes.get(i) + ";\n");
+            }
+        }
+        sb.append("}\n");
+        return sb.toString();
+    }
+    
+    /** ***************************************************************
+     * Create a graph of GraphNode, where each node has both pointers
+     * and backpointers.  This routine reverses the effective direction
+     * of the clauseMap pointers.  clauseMap points from clauses, to the 
+     * clauses that support them.  The graph will point from the supporting
+     * nodes to the supported nodes, along with backpointers that copy the
+     * direction of the original clauseMap.
+     * @param clauseMap is a list of clauses with backpointers
+     * @return a map 
+     */  
+    public HashMap<String,GraphNode> createGraph(HashMap<String,Clause> clauseMap) {
+    
+        HashMap<String,GraphNode> graph = new HashMap<String,GraphNode>();
+        Iterator<String> it = clauseMap.keySet().iterator();
+        while (it.hasNext()) {
+            String key = it.next();
+            Clause c = clauseMap.get(key);
+            for (int i = 0; i < c.support.size(); i++) {   // get backpointers from c
+                String nodeStr = c.support.get(i);         // nodeStr points from c
+                GraphNode node = null;                     // node is the source of a pointer to c
+                if (graph.containsKey(nodeStr))            // a pointer from c
+                    node = graph.get(nodeStr);
+                else {
+                    node = new GraphNode();
+                    node.name = nodeStr;
+                    graph.put(nodeStr,node);
+                }                
+                node.pointersToNodes.add(c.name);
+                
+                String nodeStr2 = c.name;                   // nodeStr2 points to c
+                GraphNode node2 = null;                     // node2 is c
+                if (graph.containsKey(nodeStr2))
+                    node2 = graph.get(nodeStr2);
+                else {
+                    node2 = new GraphNode();
+                    node2.name = nodeStr2;
+                    graph.put(nodeStr2,node2);
+                }
+                node2.pointersFromNodes.add(nodeStr); 
+            }
+        }
+        return graph;
+    }
+    
+    /** ***************************************************************
+     */  
+    public LinkedList<GraphNode> getBeginners(HashMap<String,GraphNode> graph) {
+        
+        LinkedList<GraphNode> result = new LinkedList<GraphNode>();
+        Iterator<String> it = graph.keySet().iterator();
+        while (it.hasNext()) {
+            String key = it.next();
+            GraphNode c = graph.get(key);
+            if (c.pointersFromNodes == null || c.pointersFromNodes.size() == 0)
+                result.add(c);
+        }
+        return result;
+    }
+    
+    /** ***************************************************************
+     * Assume that there are no cycles. Algorithm per
+     * Kahn, A. B. (1962), "Topological sorting of large networks", 
+     * Communications of the ACM 5 (11): 558–562, doi:10.1145/368996.369025.
+     * http://en.wikipedia.org/wiki/Topological_sorting
+     * 
+     * L ← Empty list that will contain the sorted elements
+     * S ← Set of all nodes with no incoming edges
+     * while S is non-empty do
+     *     remove a node n from S
+     *     insert n into L
+     *     for each node m with an edge e from n to m do
+     *         remove edge e from the graph
+     *         if m has no other incoming edges then
+     *             insert m into S
+     * if graph has edges then
+     *     output error message (graph has at least one cycle)
+     * else
+     *     output message (proposed topologically sorted order: L)
+     */  
+    public HashMap<String,String> toposort(HashMap<String,GraphNode> graph, LinkedList<GraphNode> S) {
+    
+        int count = 0;
+        HashMap<String,String> L = new HashMap<String,String>();        
+        // L ← Empty list that will contain the sorted elements
+        // S ← Set of all nodes with no incoming edges
+        while (S.size() > 0) {
+            GraphNode n = S.removeFirst();  // looking at pointers from n->m
+            count++;
+            String pointer = String.format("%05d", count);
+            L.put(n.name, pointer);
+            for (int i = 0; i < n.pointersToNodes.size(); i++) {  // node.pointersFromNode, pointersToNode
+                String key = n.pointersToNodes.get(i);
+                GraphNode m = graph.get(key);
+                n.pointersToNodes.remove(key);
+                m.pointersFromNodes.remove(n.name);
+                i--;  // list has shrunk, so must the index
+                if (m.pointersFromNodes.size() == 0) {
+                    S.add(m);
+                }
+            }
+        }
+        return L;
+    }
+
+    /** ***************************************************************
+     */  
+    public String proof2String(TreeMap<String,Clause> proof) {
     
         StringBuffer sb = new StringBuffer();
         Iterator<String> it = proof.keySet().iterator();
         while (it.hasNext()) {
             String key = it.next();
-            Clause c = proof.get(key);
-            c.name = nameMap.get(c.name);
-            for (int i = 0; i < c.support.size(); i++) 
-                c.support.set(i,nameMap.get(c.support.get(i)));            
-            sb.append(String.format("%-5s", (nameMap.get(key) + ".")) + "\t" + c.toStringJustify() + "\n");
+            Clause c = proof.get(key);           
+            sb.append(String.format("%-5s", (c.name + ".")) + "\t" + c.toStringJustify() + "\n");
         }
         return sb.toString();
     }
     
     /** ***************************************************************
+     * Rename the clauses (including the "support" list in each clause).
      */  
-    public void renumber(TreeMap<String,Clause> proof, HashMap<String,String> nameMap) {
+    public TreeMap<String,Clause> renumber(HashMap<String,Clause> clauseMap, HashMap<String,String> nameMap) {
     
-        int counter = 1;
-        StringBuffer sb = new StringBuffer();
-        Iterator<String> it = proof.keySet().iterator();
+        TreeMap<String,Clause> proof = new TreeMap<String,Clause>();        
+        Iterator<String> it = clauseMap.keySet().iterator();
         while (it.hasNext()) {
             String key = it.next();
-            Clause c = proof.get(key);
+            Clause c = clauseMap.get(key);               
             c.name = nameMap.get(c.name);
-            for (int i = 0; i < c.support.size(); i++) 
-                c.support.set(i,nameMap.get(c.support.get(i))); 
-            nameMap.put(key, Integer.toString(counter++));
+            for (int i = 0; i < c.support.size(); i++) {             
+                String pointer = nameMap.get(c.support.get(i));
+                c.support.set(i,pointer);
+            }
+            proof.put(c.name,c);
         }
+        return proof;
     }
     
     /** ***************************************************************
-     * @param proof is built as a side-effect
+     * Generate a proof String, built by traversing pointers in the
+     * processed list from the $false clause.
      */  
-    public void generateProofRecurse(HashMap<String,Clause> clauseMap, HashMap<String,String> nameMap,
-            Clause c, TreeMap<String,Clause> proof) {
-        
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < c.support.size(); i++) {
-            Clause newC = clauseMap.get(c.support.get(i));
-            if (newC != null) {
-                if (!proof.containsValue(newC)) {
-                    stepCount--;
-                    String newName = "step" + String.format("%5s", Integer.toString(stepCount)).replace(' ', '0');
-                    nameMap.put(newC.name, newName);
-                    proof.put(newName, newC);
-                    generateProofRecurse(clauseMap,nameMap,newC,proof);
-                }
-            }
-            else
-                System.out.println("Error in : attempt to get non-existent clause: " + c.support.get(i));
-        }
-    }
-
-    /** ***************************************************************
-     * Return the proof.
-     */  
-    public String generateProof(Clause res) {
+    public String generateProof(Clause res, boolean dotgraph) {
 
         HashMap<String,Clause> clauseMap = new HashMap<String,Clause>();
         for (int i = 0; i < processed.length(); i++) {
             Clause c = processed.get(i);
             clauseMap.put(c.name, c);
         }
-        StringBuffer sb = new StringBuffer();
-        TreeMap<String,Clause> proof = new TreeMap<String,Clause>();
-        HashMap<String,String> nameMap = new HashMap<String,String>();
-        String newName = "step" + String.format("%5s", Integer.toString(stepCount)).replace(' ', '0');
-        nameMap.put(res.name, newName);
-        proof.put(newName, res);
-        generateProofRecurse(clauseMap,nameMap,res,proof);
-        renumber(proof,nameMap);
-        return proof2String(proof,nameMap);
+        clauseMap = searchProof(clauseMap,res);                     // get just the clauses in the proof    
+        HashMap<String,GraphNode> graph = createGraph(clauseMap);   // turn into a graph with points and backpointers
+        if (dotgraph)
+            return dotGraph(graph);
+        else {
+            LinkedList<GraphNode> beginners = getBeginners(graph);      // get all clauses from KB and conjecture
+            HashMap<String,String> nameMap = toposort(graph, beginners);
+            TreeMap<String,Clause> proof = renumber(clauseMap,nameMap);
+            return proof2String(proof);
+        }
     }
     
     /** ***************************************************************
