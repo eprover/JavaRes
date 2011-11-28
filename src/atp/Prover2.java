@@ -20,6 +20,7 @@ MA  02111-1307 USA
 */
 
 import java.io.*;
+import java.util.*;
 
 public class Prover2 {
     
@@ -52,6 +53,38 @@ public class Prover2 {
         "Discard processed clauses if they are subsumed by the given clause.\n";
 
     /** ***************************************************************
+     * canonicalize options into a name/value list
+     */
+    public static HashMap<String,String> processOptions(String[] args) {
+        
+        HashMap<String,String> result = new HashMap<String,String>();
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            if (arg.startsWith("--")) {
+                if (arg.equals("--delete-tautologies"))
+                    result.put("delete-tautologies","true");
+                if (arg.equals("--forward-subsumption"))
+                    result.put("forward-subsumption","true");
+                if (arg.equals("--backward_subsumption"))
+                    result.put("backward_subsumption","true");
+            }
+            else if (arg.startsWith("-")) {
+                for (int j = 1; j < arg.length(); j++) {
+                    if (arg.charAt(j) == 't')
+                        result.put("delete-tautologies","true");
+                    if (arg.charAt(j) == 'f')
+                        result.put("forward-subsumption","true");
+                    if (arg.charAt(j) == 'b')
+                        result.put("backward_subsumption","true");
+                }
+            }
+            else
+                result.put("filename",arg);
+        }
+        return result;
+    }
+    
+    /** ***************************************************************
      * Test method for this class.  
      */
     public static void main(String[] args) {
@@ -64,7 +97,8 @@ public class Prover2 {
             ClauseSet problem = new ClauseSet();
             FileReader fr = null;
             try {
-                File fin  = new File(args[1]);
+                HashMap<String,String> opts = processOptions(args);  // canonicalize options
+                File fin = new File(opts.get("filename"));
                 fr = new FileReader(fin);
                 if (fr != null) {
                     StreamTokenizer_s st = new StreamTokenizer_s(fr);  
@@ -73,11 +107,11 @@ public class Prover2 {
                     cs.parse(st);
                     ClauseEvaluationFunction.setupEvaluationFunctions();
                     ProofState state = new ProofState(cs,ClauseEvaluationFunction.PickGiven5);
-                    if (args[0].equals("-t") || args[0].equals("--delete-tautologies"))
+                    if (opts.containsKey("delete-tautologies"))
                         state.delete_tautologies = true;
-                    else if (args[0].equals("-f") || args[0].equals("--forward-subsumption"))
+                    else if (opts.containsKey("forward-subsumption"))
                         state.forward_subsumption = true;
-                    else if (args[0].equals("-b") || args[0].equals("--backward_subsumption"))
+                    else if  (opts.containsKey("backward_subsumption"))
                         state.backward_subsumption = true;
                     Clause res = state.saturate();
                     System.out.println(state.generateStatisticsString());
