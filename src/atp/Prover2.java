@@ -50,7 +50,9 @@ public class Prover2 {
         "\n" +
         " -b\n" +
         "--backward-subsumption\n" +
-        "Discard processed clauses if they are subsumed by the given clause.\n";
+        "Discard processed clauses if they are subsumed by the given clause.\n" +
+        "--experiment\n" +
+        "Run an experiment to total times for all tests in a given directory.\n";
 
     /** ***************************************************************
      * canonicalize options into a name/value list
@@ -67,6 +69,8 @@ public class Prover2 {
                     result.put("forward-subsumption","true");
                 if (arg.equals("--backward_subsumption"))
                     result.put("backward_subsumption","true");
+                if (arg.equals("--experiment"))
+                    result.put("experiment", "true");
             }
             else if (arg.startsWith("-")) {
                 for (int j = 1; j < arg.length(); j++) {
@@ -85,6 +89,59 @@ public class Prover2 {
     }
     
     /** ***************************************************************
+     * results are side effects on proofState
+     */
+    public static void setStateOptions(ProofState state, HashMap<String,String> opts) {
+        
+        if (opts.containsKey("delete-tautologies"))
+            state.delete_tautologies = true;
+        else if (opts.containsKey("forward-subsumption"))
+            state.forward_subsumption = true;
+        else if (opts.containsKey("backward_subsumption"))
+            state.backward_subsumption = true;
+    }
+        
+    /** ***************************************************************
+     */
+    public static ProofState processTestFile(String filename, HashMap<String,String> opts) {
+        
+        FileReader fr = null;
+        try {
+            File fin = new File(filename);
+            System.out.println("INFO in Prover2.processTestFile(): reading file " + filename);
+            fr = new FileReader(fin);
+            if (fr != null) {
+                StreamTokenizer_s st = new StreamTokenizer_s(fr);  
+                Term.setupStreamTokenizer(st);
+                ClauseSet cs = new ClauseSet();
+                cs.parse(st);
+                //System.out.println(cs);
+                ClauseEvaluationFunction.setupEvaluationFunctions();
+                ProofState state = new ProofState(cs,ClauseEvaluationFunction.PickGiven5);
+                setStateOptions(state,opts);
+                state.res = state.saturate(5);
+                if (state.res != null)
+                    return state;
+                else 
+                    return null;
+            }
+        }
+        catch (IOException e) {
+            System.out.println("Error in Prover2.processTestFile(): File error reading " + filename + ": " + e.getMessage());
+            return null;
+        }
+        finally {
+            try {
+                if (fr != null) fr.close();
+            }
+            catch (Exception e) {
+                System.out.println("Exception in Prover2.processTestFile()" + e.getMessage());
+            }
+        }  
+        return null;
+    }
+    
+    /** ***************************************************************
      * Test method for this class.  
      */
     public static void main(String[] args) {
@@ -94,47 +151,46 @@ public class Prover2 {
             return;
         }
         if (!Term.emptyString(args[0])) {
-            ClauseSet problem = new ClauseSet();
-            FileReader fr = null;
-            try {
-                HashMap<String,String> opts = processOptions(args);  // canonicalize options
-                File fin = new File(opts.get("filename"));
-                fr = new FileReader(fin);
-                if (fr != null) {
-                    StreamTokenizer_s st = new StreamTokenizer_s(fr);  
-                    Term.setupStreamTokenizer(st);
-                    ClauseSet cs = new ClauseSet();
-                    cs.parse(st);
-                    ClauseEvaluationFunction.setupEvaluationFunctions();
-                    ProofState state = new ProofState(cs,ClauseEvaluationFunction.PickGiven5);
-                    if (opts.containsKey("delete-tautologies"))
-                        state.delete_tautologies = true;
-                    else if (opts.containsKey("forward-subsumption"))
-                        state.forward_subsumption = true;
-                    else if  (opts.containsKey("backward_subsumption"))
-                        state.backward_subsumption = true;
-                    Clause res = state.saturate();
-                    System.out.println(state.generateStatisticsString());
-                    if (res != null) {
-                        System.out.println("# SZS status Unsatisfiable");
-                        System.out.println(state.generateProof(res,false));
+            HashMap<String,String> opts = processOptions(args);  // canonicalize options
+            if (opts.containsKey("experiment")) {
+                File dir = new File(opts.get("filename")); 
+                String[] children = dir.list();
+                if (children != null) {
+                    HashMap<String,String> results = new HashMap<String,String>();
+                    for (int i = 0; i < children.length; i++) {
+                        String filename = opts.get("filename") + File.separator + children[i];
+                        if (filename.endsWith(".p")) {
+                            System.out.println("************ Testing Problem " + children[i] + " **************");
+                            ProofState state = processTestFile(filename,opts);
+                            if (state != null) {
+                                System.out.println(state.generateStatisticsString());
+                                System.out.println("# SZS status Unsatisfiable");
+                                System.out.println(state.generateProof(state.res,false));
+                                state.SZSresult = "Unsatisfiable";
+                            }
+                            else
+                                System.out.println("# SZS status: Satisfiable: " + state.SZSresult);      
+                            results.put(filename,Long.toString(state.time) + " milliseconds, with status: " + state.SZSresult);
+                        }
                     }
-                    else
-                        System.out.println("# SZS status Satisfiable");
+                    Iterator<String> it = results.keySet().iterator();
+                    while (it.hasNext()) {
+                        String key = it.next();
+                        String value = results.get(key);
+                        System.out.println(key + " : " + value);
+                    }
                 }
             }
-            catch (IOException e) {
-                System.out.println("Error in Prover2.main(): File error reading " + args[1] + ": " + e.getMessage());
-                return;
-            }
-            finally {
-                try {
-                    if (fr != null) fr.close();
+            else {
+                ProofState state = processTestFile(opts.get("filename"),opts);
+                if (state != null) {
+                    System.out.println(state.generateStatisticsString());
+                    System.out.println("# SZS status Unsatisfiable");
+                    System.out.println(state.generateProof(state.res,false));
                 }
-                catch (Exception e) {
-                    System.out.println("Exception in Prover2.main()" + e.getMessage());
-                }
-            }                        
+                else
+                    System.out.println("# SZS status Satisfiable");                    
+            }                            
         }
     }
 }
