@@ -200,6 +200,7 @@ public class Clause {
             return this;
         }
         catch (Exception ex) {
+            ProofState.SZSresult = "input error";
             if (st.ttype == StreamTokenizer.TT_EOF)
                 return this;
             System.out.println("Error in Clause.parse(): " + ex.getMessage());
