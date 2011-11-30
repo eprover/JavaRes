@@ -70,8 +70,11 @@ public class ProofState {
     public static int tautologies_deleted  = 0;
     public static int forward_subsumed     = 0;
     public static int backward_subsumed    = 0;
+    public static long time                = 0;  // in milliseconds
+    public static Clause res               = null;
+    public static String SZSresult         = "";  // result as specified by SZS "ontology"
     
-    public static int stepCount            = 999;
+    // public static int stepCount            = 999;
     
     /** ***************************************************************
      * Initialize the proof state with a set of clauses.
@@ -89,6 +92,7 @@ public class ProofState {
         tautologies_deleted  = 0;
         forward_subsumed     = 0;
         backward_subsumed    = 0;
+        time                 = 0;
     }
     
     /** ***************************************************************
@@ -149,15 +153,31 @@ public class ProofState {
     /** ***************************************************************
      * Main proof procedure. If the clause set is found unsatisfiable, 
      * return the empty clause as a witness. Otherwise return null.
+     * Allow timeout to terminate the search.
+     */  
+    public Clause saturate(int seconds) {
+
+        long t1 = System.currentTimeMillis();
+        while (unprocessed.length() > 0) {
+            Clause res = processClause();
+            if (res != null) {
+                time = System.currentTimeMillis() - t1;
+                return res;
+            }
+            if (((System.currentTimeMillis() - t1) / 1000.0) > seconds) {
+                SZSresult = "timeout";
+                time = System.currentTimeMillis() - t1;
+                return null;
+            }
+        }
+        return null;
+    }
+    
+    /** ***************************************************************
      */  
     public Clause saturate() {
 
-        while (unprocessed.length() > 0) {
-            Clause res = processClause();
-            if (res != null)
-                return res;
-        }
-        return null;
+        return saturate(32000);
     }
 
     /** ***************************************************************
@@ -181,11 +201,15 @@ public class ProofState {
      */  
     public HashMap<String,Clause> searchProof(HashMap<String,Clause> clauseMap, Clause source) {
         
+        //System.out.println("INFO in ProofState.searchProof(): source: " + source.toStringJustify());
         HashMap<String,Clause> proof = new HashMap<String,Clause>();
         proof.put(source.name,source);
         for (int i = 0; i < source.support.size(); i++) {
             Clause w = clauseMap.get(source.support.get(i));
-            proof.putAll(searchProof(clauseMap,w));
+            if (w == null)
+                System.out.println("Error in ProofState.searchProof(): no clause for id " + source.support.get(i));
+            else
+                proof.putAll(searchProof(clauseMap,w));
         }
         return proof;
     }
