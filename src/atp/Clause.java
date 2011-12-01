@@ -48,6 +48,20 @@ public class Clause {
     ArrayList<Integer> evaluation = null;  // Must be the same order as clause evaluation function list in EvalStructure
     
     /** ***************************************************************
+     * Print for use by GraphViz.  Convert vertical bar to HTML code and
+     * just print the formula with no informational wrapper.
+     */
+    public String toString(boolean forDot) {
+            
+        if (!forDot)
+            return toString();
+        else {
+            String temp = Literal.literalList2String(literals);
+            return temp.replaceAll("\\|", "&#124;");
+        }
+    }
+    
+    /** ***************************************************************
      */
     public String toString() {
             
@@ -58,6 +72,9 @@ public class Clause {
     }
     
     /** ***************************************************************
+     * Create a string representation of the Clause with reference to
+     * an inference rule and its supporting axioms if it was generated
+     * in inference.
      */
     public String toStringJustify() {
             
