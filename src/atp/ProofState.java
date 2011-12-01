@@ -73,6 +73,7 @@ public class ProofState {
     public static long time                = 0;  // in milliseconds
     public static Clause res               = null;
     public static String SZSresult         = "";  // result as specified by SZS "ontology"
+    public static String evalFunName       = "";  // name of the ClauseEvaluationFunction used
     
     // public static int stepCount            = 999;
     
@@ -218,6 +219,8 @@ public class ProofState {
      */  
     public class GraphNode {
         String name = null;
+        String clause = null;
+        
           //list of nodes that this node supports
         ArrayList<String> pointersToNodes = new ArrayList<String>();
         ArrayList<String> pointersFromNodes = new ArrayList<String>();
@@ -253,7 +256,7 @@ public class ProofState {
         while (it.hasNext()) {
             String key = it.next();
             GraphNode gn = graph.get(key);
-            sb.append(gn.name + " [shape=box];\n");
+            sb.append(gn.name + " [shape=record label=\"{" + gn.name + " | " + gn.clause + "}\"];\n");
             for (int i = 0; i < gn.pointersToNodes.size(); i++) {
                 sb.append(gn.name + " -> " + gn.pointersToNodes.get(i) + ";\n");
             }
@@ -279,6 +282,7 @@ public class ProofState {
         while (it.hasNext()) {
             String key = it.next();
             Clause c = clauseMap.get(key);
+            System.out.println("INFO in ProofState.createGraph(): " + c.toString());
             for (int i = 0; i < c.support.size(); i++) {   // get backpointers from c
                 String nodeStr = c.support.get(i);         // nodeStr points from c
                 GraphNode node = null;                     // node is the source of a pointer to c
@@ -288,8 +292,12 @@ public class ProofState {
                     node = new GraphNode();
                     node.name = nodeStr;
                     graph.put(nodeStr,node);
-                }                
+                }                                
                 node.pointersToNodes.add(c.name);
+                if (Term.emptyString(node.clause)) {
+                    Clause c2 = clauseMap.get(nodeStr);
+                    node.clause = c2.toString(true);
+                }
                 
                 String nodeStr2 = c.name;                   // nodeStr2 points to c
                 GraphNode node2 = null;                     // node2 is c
@@ -300,6 +308,9 @@ public class ProofState {
                     node2.name = nodeStr2;
                     graph.put(nodeStr2,node2);
                 }
+                if (Term.emptyString(node2.clause))
+                    node2.clause = c.toString(true);
+                System.out.println("INFO in ProofState.createGraph() 2 : " + c.toString());
                 node2.pointersFromNodes.add(nodeStr); 
             }
         }
