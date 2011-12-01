@@ -51,8 +51,10 @@ public class Prover2 {
         " -b\n" +
         "--backward-subsumption\n" +
         "Discard processed clauses if they are subsumed by the given clause.\n" +
-        "--experiment\n" +
-        "Run an experiment to total times for all tests in a given directory.\n";
+        " --experiment\n" +
+        "Run an experiment to total times for all tests in a given directory.\n" +
+        " -d\n" +
+        "Generate proof output in dot-graph format\n";
 
     /** ***************************************************************
      * canonicalize options into a name/value list
@@ -80,6 +82,8 @@ public class Prover2 {
                         result.put("forward-subsumption","true");
                     if (arg.charAt(j) == 'b')
                         result.put("backward_subsumption","true");
+                    if (arg.charAt(j) == 'd')
+                        result.put("dotgraph","true");
                 }
             }
             else
@@ -116,7 +120,8 @@ public class Prover2 {
                 ClauseSet cs = new ClauseSet();
                 cs.parse(st);
                 //System.out.println(cs);
-                ClauseEvaluationFunction.setupEvaluationFunctions();
+                ClauseEvaluationFunction.setupEvaluationFunctions();                
+                // available strategies: FIFOEval, SymbolCountEval, PickGiven5, PickGiven2 
                 ProofState state = new ProofState(cs,ClauseEvaluationFunction.PickGiven5);
                 setStateOptions(state,opts);
                 state.res = state.saturate(5);
@@ -152,6 +157,9 @@ public class Prover2 {
         }
         if (!Term.emptyString(args[0])) {
             HashMap<String,String> opts = processOptions(args);  // canonicalize options
+            boolean dotgraph = false;
+            if (opts.containsKey("dotgraph"))
+                dotgraph = true;
             if (opts.containsKey("experiment")) {
                 File dir = new File(opts.get("filename")); 
                 String[] children = dir.list();
@@ -165,7 +173,7 @@ public class Prover2 {
                             if (state != null) {
                                 System.out.println(state.generateStatisticsString());
                                 System.out.println("# SZS status Unsatisfiable");
-                                System.out.println(state.generateProof(state.res,false));
+                                System.out.println(state.generateProof(state.res,dotgraph));
                                 state.SZSresult = "Unsatisfiable";
                             }
                             else
@@ -186,7 +194,7 @@ public class Prover2 {
                 if (state != null) {
                     System.out.println(state.generateStatisticsString());
                     System.out.println("# SZS status Unsatisfiable");
-                    System.out.println(state.generateProof(state.res,false));
+                    System.out.println(state.generateProof(state.res,dotgraph));
                 }
                 else
                     System.out.println("# SZS status Satisfiable");                    
