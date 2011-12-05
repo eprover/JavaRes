@@ -40,6 +40,10 @@ public class Prover2 {
         "--help\n" +
         "Print this help.\n" +
         "\n" +
+        " -to\n" +
+        "--timeout\n" +
+        "Must be followed by an integer, which is a timeout in seconds.\n" +
+        "\n" +
         " -t\n" +
         "--delete-tautologies\n" +
         "Discard the given clause if it is a tautology.\n" +
@@ -53,11 +57,20 @@ public class Prover2 {
         "Discard processed clauses if they are subsumed by the given clause.\n" +
         " --experiment\n" +
         "Run an experiment to total times for all tests in a given directory.\n" +
+        " --allOpts\n" +
+        "Run all options.  Ignore -tfb command line options and try in all combination.\n" +
+        " --allStrat\n" +
+        "Run all clause selection strategies.\n" +
         " -d\n" +
         "Generate proof output in dot-graph format\n";
 
+    public static String errors = "";
+    
     /** ***************************************************************
-     * canonicalize options into a name/value list
+     * canonicalize options into a name/value list.
+     * If the --allOpts flag is set remove all other subsumption/deletion
+     * options, since all will be tried.
+     * @return a HashMap of name/value pairs, or null if there's an error.
      */
     public static HashMap<String,String> processOptions(String[] args) {
         
@@ -65,14 +78,27 @@ public class Prover2 {
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             if (arg.startsWith("--")) {
+                if (arg.equals("--allOpts"))
+                    result.put("allOpts", "true");
+                if (arg.equals("--experiment"))
+                    result.put("experiment", "true");
+                if (arg.equals("--allStrat"))
+                    result.put("allStrat", "true");
                 if (arg.equals("--delete-tautologies"))
                     result.put("delete-tautologies","true");
                 if (arg.equals("--forward-subsumption"))
                     result.put("forward-subsumption","true");
                 if (arg.equals("--backward_subsumption"))
                     result.put("backward_subsumption","true");
-                if (arg.equals("--experiment"))
-                    result.put("experiment", "true");
+                if (arg.equals("--timeout")) {
+                    try {
+                         int val = Integer.parseInt(args[i+1]);
+                    }
+                    catch (NumberFormatException n) {
+                        return null;
+                    }
+                    result.put("timeout",args[i+1]);
+                }
             }
             else if (arg.startsWith("-")) {
                 for (int j = 1; j < arg.length(); j++) {
@@ -84,10 +110,27 @@ public class Prover2 {
                         result.put("backward_subsumption","true");
                     if (arg.charAt(j) == 'd')
                         result.put("dotgraph","true");
+                    if (arg.equals("-to")) {
+                        try {
+                             int val = Integer.parseInt(args[i+1]);
+                        }
+                        catch (NumberFormatException n) {
+                            return null;
+                        }
+                        result.put("timeout",args[i+1]);
+                    }
                 }
             }
             else
                 result.put("filename",arg);
+        }
+        if (result.containsKey("allOpts")) {
+            if (result.containsKey("delete-tautologies"))                
+                result.remove("delete-tautologies");
+            if (result.containsKey("forward-subsumption"))
+                result.remove("forward-subsumption");
+            if (result.containsKey("backward_subsumption"))
+                result.remove("backward_subsumption");
         }
         return result;
     }
@@ -99,36 +142,101 @@ public class Prover2 {
         
         if (opts.containsKey("delete-tautologies"))
             state.delete_tautologies = true;
-        else if (opts.containsKey("forward-subsumption"))
+        if (opts.containsKey("forward-subsumption"))
             state.forward_subsumption = true;
-        else if (opts.containsKey("backward_subsumption"))
+        if (opts.containsKey("backward_subsumption"))
             state.backward_subsumption = true;
+    }
+
+    /** ***************************************************************
+     */
+    public static ArrayList<EvalStructure> setAllEvalOptions() {
+        
+        ArrayList<EvalStructure> result = new ArrayList<EvalStructure>();
+        result.add(ClauseEvaluationFunction.FIFOEval);
+        result.add(ClauseEvaluationFunction.SymbolCountEval);
+        result.add(ClauseEvaluationFunction.PickGiven5);
+        result.add(ClauseEvaluationFunction.PickGiven2);
+        return result;
     }
         
     /** ***************************************************************
      */
-    public static ProofState processTestFile(String filename, HashMap<String,String> opts) {
+    public static ArrayList<ProofState> setAllStateOptions(ClauseSet clauses, EvalStructure efunctions) {
         
+        ArrayList<ProofState> result = new ArrayList<ProofState>();
+        for (int i = 0; i < 8; i++) {
+            ProofState state = new ProofState(clauses,efunctions);
+            if ((i & 1) == 0)
+                state.delete_tautologies = false;
+            else
+                state.delete_tautologies = true;
+            if ((i & 2) == 0)
+                state.forward_subsumption = false;
+            else
+                state.forward_subsumption = true;
+            if ((i & 4) == 0)
+                state.backward_subsumption = false;
+            else
+                state.backward_subsumption = true;
+            result.add(state);
+        }
+        return result;
+    }
+
+    /** ***************************************************************
+     */
+    private static int getTimeout(HashMap<String,String> opts) {
+        
+        if (opts.containsKey("timeout"))
+            return Integer.parseInt(opts.get("timeout"));
+        else
+            return 5;
+    }
+    
+    /** ***************************************************************
+     */
+    private static ArrayList<ProofState> processTestFile(String filename, HashMap<String,String> opts, ArrayList<EvalStructure> evals) {
+        
+        System.out.println("INFO in Prover2.processTestFile(): running file with " + opts);
+        ArrayList<ProofState> result = new ArrayList<ProofState>();
         FileReader fr = null;
         try {
             File fin = new File(filename);
             System.out.println("INFO in Prover2.processTestFile(): reading file " + filename);
             fr = new FileReader(fin);
             if (fr != null) {
+                System.out.println("INFO in Prover2.processTestFile(): file not null");
                 StreamTokenizer_s st = new StreamTokenizer_s(fr);  
                 Term.setupStreamTokenizer(st);
                 ClauseSet cs = new ClauseSet();
-                cs.parse(st);
-                //System.out.println(cs);
-                ClauseEvaluationFunction.setupEvaluationFunctions();                
-                // available strategies: FIFOEval, SymbolCountEval, PickGiven5, PickGiven2 
-                ProofState state = new ProofState(cs,ClauseEvaluationFunction.PickGiven5);
-                setStateOptions(state,opts);
-                state.res = state.saturate(5);
-                if (state.res != null)
-                    return state;
-                else 
-                    return null;
+                cs.parse(st);                 
+                for (int i = 0; i < evals.size(); i++) {
+                    EvalStructure eval = evals.get(i);
+                    System.out.println("INFO in Prover2.processTestFile(): running file with " + evals.size() + " evals");
+                    if (opts.containsKey("allOpts")) {
+                        ArrayList<ProofState> states = setAllStateOptions(cs,evals.get(i));
+                        System.out.println("INFO in Prover2.processTestFile(): created " + states.size() + " states");
+                        for (int j = 0; j < states.size(); j++) {
+                            System.out.println("INFO in Prover2.processTestFile(): running file with " + states.size() + " states");
+                            ProofState state = states.get(j);
+                            int timeout = getTimeout(opts);
+                            state.filename = filename;
+                            state.evalFunctionName = eval.name;
+                            System.out.println("INFO in Prover2.processTestFile(): " + state);
+                            state.res = state.saturate(timeout);
+                            if (state.res != null)
+                                result.add(state);
+                        }
+                    }
+                    else {
+                        ProofState state = new ProofState(cs,evals.get(i)); 
+                        setStateOptions(state,opts);
+                        state.res = state.saturate(5);
+                        if (state.res != null)
+                            result.add(state);
+                    }
+                }
             }
         }
         catch (IOException e) {
@@ -143,7 +251,19 @@ public class Prover2 {
                 System.out.println("Exception in Prover2.processTestFile()" + e.getMessage());
             }
         }  
-        return null;
+        return result;
+    }
+    
+    /** ***************************************************************  
+     */
+    private static String spreadsheetResults(ArrayList<ProofState> results) {
+    
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < results.size(); i++) {
+            ProofState value = results.get(i);
+            sb.append(value.generateMatrixStatisticsString() + "\n");
+        }
+        return sb.toString();
     }
     
     /** ***************************************************************
@@ -156,41 +276,44 @@ public class Prover2 {
             return;
         }
         if (!Term.emptyString(args[0])) {
+            ClauseEvaluationFunction.setupEvaluationFunctions();
+            ArrayList<EvalStructure> evals = null;
             HashMap<String,String> opts = processOptions(args);  // canonicalize options
+            if (opts == null) {
+                System.out.println("Error in Prover2.main(): bad command line options.");
+                return;
+            }
+                
+            if (opts.containsKey("allStrat")) 
+                evals = setAllEvalOptions();            
+            else {
+                evals = new ArrayList<EvalStructure>();
+                evals.add(ClauseEvaluationFunction.PickGiven5);
+            }
             boolean dotgraph = false;
             if (opts.containsKey("dotgraph"))
                 dotgraph = true;
             if (opts.containsKey("experiment")) {
+                ProofState.generateMatrixHeaderStatisticsString();
                 File dir = new File(opts.get("filename")); 
                 String[] children = dir.list();
                 if (children != null) {
-                    HashMap<String,String> results = new HashMap<String,String>();
+                    ArrayList<ProofState> results = new ArrayList<ProofState>();
                     for (int i = 0; i < children.length; i++) {
                         String filename = opts.get("filename") + File.separator + children[i];
                         if (filename.endsWith(".p")) {
-                            System.out.println("************ Testing Problem " + children[i] + " **************");
-                            ProofState state = processTestFile(filename,opts);
-                            if (state != null) {
-                                System.out.println(state.generateStatisticsString());
-                                System.out.println("# SZS status Unsatisfiable");
-                                System.out.println(state.generateProof(state.res,dotgraph));
-                                state.SZSresult = "Unsatisfiable";
-                            }
-                            else
-                                System.out.println("# SZS status: Satisfiable: " + state.SZSresult);      
-                            results.put(filename,Long.toString(state.time) + " milliseconds, with status: " + state.SZSresult);
+                            //System.out.println("************ Testing Problem " + children[i] + " **************");
+                            results.addAll(processTestFile(filename,opts,evals));
                         }
                     }
-                    Iterator<String> it = results.keySet().iterator();
-                    while (it.hasNext()) {
-                        String key = it.next();
-                        String value = results.get(key);
-                        System.out.println(key + " : " + value);
-                    }
+                    System.out.println(spreadsheetResults(results));
                 }
             }
             else {
-                ProofState state = processTestFile(opts.get("filename"),opts);
+                evals = new ArrayList<EvalStructure>();
+                evals.add(ClauseEvaluationFunction.PickGiven5);
+                ArrayList<ProofState> testlist = processTestFile(opts.get("filename"),opts,evals);
+                ProofState state = testlist.get(0);
                 if (state != null) {
                     System.out.println(state.generateStatisticsString());
                     System.out.println("# SZS status Unsatisfiable");
