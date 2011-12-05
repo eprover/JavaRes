@@ -87,6 +87,7 @@ public abstract class ClauseEvaluationFunction {
        evals.add(new FIFOEvaluation());                
        ratings.add(new Integer(1));
        FIFOEval = new EvalStructure(evals,ratings);
+       FIFOEval.name = "FIFOEval";
 
         // Strict symbol counting (a smaller clause is always better than a
         // larger clause). This is only fair if subsumption or a similar
@@ -98,6 +99,7 @@ public abstract class ClauseEvaluationFunction {
        ratings = new ArrayList<Integer>();
        ratings.add(new Integer(1));
        SymbolCountEval = new EvalStructure(evals,ratings);
+       SymbolCountEval.name = "SymbolCountEval";
        
         // Experience has shown that picking always the smallest clause (by
         // symbol count) isn't optimal, but that it pays off to interleave smallest
@@ -112,6 +114,7 @@ public abstract class ClauseEvaluationFunction {
        ratings.add(new Integer(5));
        ratings.add(new Integer(1));
        PickGiven5 = new EvalStructure(evals,ratings);
+       PickGiven5.name = "PickGiven5";
 
         // See above, but now with a pick-given ration of 2 for easier testing
        evals = new ArrayList<ClauseEvaluationFunction>();
@@ -120,7 +123,8 @@ public abstract class ClauseEvaluationFunction {
        ratings = new ArrayList<Integer>();
        ratings.add(new Integer(5));
        ratings.add(new Integer(1));
-       PickGiven2 = new EvalStructure(evals,ratings);    
+       PickGiven2 = new EvalStructure(evals,ratings);  
+       PickGiven2.name = "PickGiven2";
     }
     
     /** ***************************************************************
