@@ -32,6 +32,7 @@ public class EvalStructure {
     public ArrayList<Integer> eval_vec = null;
     public int current = 0;
     public int current_count = 0;
+    public String name = "";
     
     /** ***************************************************************
      * Initialize this structure. The argument is a list of pairs,
