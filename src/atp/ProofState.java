@@ -47,35 +47,31 @@ import java.util.*;
  */ 
 public class ProofState {
      
-    /* This defines the clause selection heuristic, i.e. the order in
-       which unprocessed clauses are selected for processing. */
-    public static boolean heuristics = false;
     /* This determines if tautologies will be deleted. Tautologies in
        plain first-order logic (without equality) are clauses which
        contain two literals with the same atom, but opposite signs. */
-    public static boolean delete_tautologies = false;
+    public boolean delete_tautologies = false;
     /* Forward-subsumption checks the given clause against already
        processed clauses, and discards it if it is subsumed. */
-    public static boolean forward_subsumption = false;
+    public boolean forward_subsumption = false;
     /* Backwards subsumption checks the processed clauses against the
        given clause, and discards all processed clauses that are
        subsumed. */
-    public static boolean backward_subsumption = false;
-    public static HeuristicClauseSet unprocessed = null;
-    public static ClauseSet processed = null;
-    public static int initial_clause_count = 0;
-    public static int proc_clause_count    = 0;
-    public static int factor_count         = 0;
-    public static int resolvent_count      = 0;
-    public static int tautologies_deleted  = 0;
-    public static int forward_subsumed     = 0;
-    public static int backward_subsumed    = 0;
-    public static long time                = 0;  // in milliseconds
-    public static Clause res               = null;
-    public static String SZSresult         = "";  // result as specified by SZS "ontology"
-    public static String evalFunName       = "";  // name of the ClauseEvaluationFunction used
-    
-    // public static int stepCount            = 999;
+    public boolean backward_subsumption = false;
+    public HeuristicClauseSet unprocessed = null; // eval_functions.eval_funs .name
+    public ClauseSet processed = null;
+    public int initial_clause_count = 0;
+    public int proc_clause_count    = 0;
+    public int factor_count         = 0;
+    public int resolvent_count      = 0;
+    public int tautologies_deleted  = 0;
+    public int forward_subsumed     = 0;
+    public int backward_subsumed    = 0;
+    public long time                = 0;  // in milliseconds
+    public Clause res               = null;
+    public String SZSresult         = "";  // result as specified by SZS "ontology"
+    public String filename          = "";
+    public String evalFunctionName  = "";
     
     /** ***************************************************************
      * Initialize the proof state with a set of clauses.
@@ -97,6 +93,28 @@ public class ProofState {
     }
     
     /** ***************************************************************
+     */  
+    public String toString() {
+        
+        return generateStatisticsString();
+    }
+    /** ***************************************************************
+     */  
+    public String toStringOpts() {
+        
+        StringBuffer sb = new StringBuffer();
+        sb.append("file : " + filename + "\n");
+        sb.append(" delete_tautologies : " + delete_tautologies + "\n");
+        sb.append(" forward_subsumption : " + forward_subsumption + "\n");
+        sb.append(" backward_subsumption : " + backward_subsumption + "\n");
+        sb.append(" eval function name : " + evalFunctionName + "\n");
+        //for (int i = 0; i < unprocessed.eval_functions.eval_funs.size(); i++)
+        //    sb.append(" evalFn : " + unprocessed.eval_functions.eval_funs.get(i).name + "\n");
+        sb.append(generateStatisticsString());
+        return sb.toString();
+    }
+    
+    /** ***************************************************************
      * Pick a clause from unprocessed and process it. If the empty
      * clause is found, return it. Otherwise return null.
      */  
@@ -104,7 +122,7 @@ public class ProofState {
 
         Clause given_clause = unprocessed.extractBest();
         given_clause = given_clause.freshVarCopy();
-        System.out.println("#" + given_clause.toStringJustify());
+        //System.out.println("#" + given_clause.toStringJustify());
         if (given_clause.isEmpty())
             // We have found an explicit contradiction
             return given_clause;
@@ -155,6 +173,9 @@ public class ProofState {
      * Main proof procedure. If the clause set is found unsatisfiable, 
      * return the empty clause as a witness. Otherwise return null.
      * Allow timeout to terminate the search.
+     * The timeout needs to be made more sophisticated, with a system
+     * interrupt, since just processing one clause could take infinite
+     * time, and therefore a timeout in this method would never occur.
      */  
     public Clause saturate(int seconds) {
 
@@ -187,6 +208,7 @@ public class ProofState {
     public String generateStatisticsString() {
 
         StringBuffer sb = new StringBuffer();
+        sb.append("# Filename           : " + filename + "\n");
         sb.append("# Initial clauses    : " + initial_clause_count + "\n");
         sb.append("# Processed clauses  : " + proc_clause_count + "\n");
         sb.append("# Factors computed   : " + factor_count + "\n");
@@ -194,9 +216,52 @@ public class ProofState {
         sb.append("# Tautologies deleted: " + tautologies_deleted + "\n");
         sb.append("# Forward subsumed   : " + forward_subsumed + "\n");
         sb.append("# Backward subsumed  : " + backward_subsumed + "\n");
+        sb.append("# time               : " + time + "\n");
         return sb.toString();
     }
     
+    /** ***************************************************************
+     */  
+    public static String generateMatrixHeaderStatisticsString() {
+
+        StringBuffer sb = new StringBuffer();
+        sb.append("Filename,");
+        sb.append("Delete_tautologies,");
+        sb.append("Forward_subsumption,");
+        sb.append("Backward_subsumption,");
+        sb.append("Eval function name,");
+        sb.append("Initial clauses,");
+        sb.append("Processed clauses,");
+        sb.append("Factors computed,");
+        sb.append("Resolvents computed,");
+        sb.append("Tautologies deleted,");
+        sb.append("Forward subsumed,");
+        sb.append("Backward subsumed,");
+        sb.append("Time,");
+        return sb.toString();
+    }
+    
+    /** ***************************************************************
+     * Return the proof state statistics in spreadsheet form.
+     */  
+    public String generateMatrixStatisticsString() {
+
+        StringBuffer sb = new StringBuffer();
+        sb.append(filename + ",");
+        sb.append(delete_tautologies + ",");
+        sb.append(forward_subsumption + ",");
+        sb.append(backward_subsumption + ",");
+        sb.append(evalFunctionName + ",");
+        sb.append(initial_clause_count + ",");
+        sb.append(proc_clause_count + ",");
+        sb.append(factor_count + ",");
+        sb.append(resolvent_count + ",");
+        sb.append(tautologies_deleted + ",");
+        sb.append(forward_subsumed + ",");
+        sb.append(backward_subsumed + ",");
+        sb.append(time);
+        return sb.toString();
+    }
     /** ***************************************************************
      * Get all clauses used in the proof
      */  
@@ -442,15 +507,6 @@ public class ProofState {
     public static String spec3 = "cnf(p_or_q, axiom, p(X)|q(a)).\n" +
         "cnf(taut, axiom, p(X)|~p(X)).\n" +
         "cnf(not_p, axiom, ~p(a)).";
-    
-    /** ***************************************************************
-     * Setup function for clause/literal unit tests. Initialize
-     * variables needed throughout the tests.
-     */
-    public static void setUp() {
-
-        delete_tautologies = true;
-    }
     
     /** ***************************************************************
      * Evaluate the result of a saturation compared to the expected result.
