@@ -34,6 +34,7 @@ MA  02111-1307 USA
 package atp;
 import java.io.*;
 import java.util.*;
+import java.text.*;
 
 /** ***************************************************************
 */
@@ -165,7 +166,7 @@ public class Clause {
      * @return the parsed clause.  Note also that this is the side effect 
      * on the clause instance
      */
-    public Clause parse(StreamTokenizer_s st) {
+    public Clause parse(StreamTokenizer_s st) throws ParseException {
                
         try {
             Term.setupStreamTokenizer(st);
@@ -226,13 +227,13 @@ public class Clause {
             else
                 System.out.println("Error in Term.parseTermList(): token:" + st.ttype + " " + Character.toString((char) st.ttype));  
             ex.printStackTrace();
+            throw (new ParseException("input error",0));
         }
-        return this;
     }  
     
     /** ***************************************************************
      */
-    public Clause string2Clause(String s) {
+    public Clause string2Clause(String s) throws ParseException {
     
         StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(s));
         Term.setupStreamTokenizer(st);
@@ -383,6 +384,7 @@ public class Clause {
         StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(str1));
         Term.setupStreamTokenizer(st);
                 
+        try {
         Clause c1 = new Clause();        
         c1.parse(st);
         assert c1.toString().equals("cnf(test,axiom,p(a)|p(f(X))).") : 
@@ -418,6 +420,10 @@ public class Clause {
         assert c6.toString().equals("cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).") : 
             "Failure. " + c6.toString() + " not equal to cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).";
         System.out.println(c6);
+        }
+        catch (ParseException p) {
+            System.out.println(p.getMessage());
+        }
     }
     
     /** ***************************************************************
