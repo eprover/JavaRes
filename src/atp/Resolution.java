@@ -51,7 +51,8 @@ MA  02111-1307 USA
 package atp;
 
 import java.io.*;
-import java.util.*;    
+import java.util.*;  
+import java.text.*;
 
 public class Resolution {
 
@@ -167,6 +168,7 @@ public class Resolution {
            "cnf(ftest,axiom,p(X)|~q|p(a)|~q|p(Y)).";
        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec));
        Term.setupStreamTokenizer(st);
+       try {
        c1.parse(st);
        c2.parse(st);
        c3.parse(st);
@@ -187,6 +189,10 @@ public class Resolution {
        Term.setupStreamTokenizer(st);
        c6.parse(st);
        c7.parse(st);
+       }
+       catch (ParseException p) {
+           System.out.println(p.getMessage());
+       }
     }
     
     /** ***************************************************************
