@@ -20,6 +20,7 @@ MA  02111-1307 USA
 package atp;
 import java.io.*;
 import java.util.*;
+import java.text.*;
 
 /** ***************************************************************
  * A class representing a clause set (or, more precisely,
@@ -124,7 +125,16 @@ public class ClauseSet {
         int count = 0;
         while (st.ttype != StreamTokenizer_s.TT_EOF) {
             Clause clause = new Clause();
-            clause.parse(st);
+            try {
+                Clause c = clause.parse(st);
+                if (c == null)
+                    return 0;
+            }
+            catch (ParseException p) {
+                System.out.println(p.getMessage());
+                return 0;
+            }
+
             if (clause.literals.size() > 0)
                 add(clause);
         }
@@ -149,7 +159,7 @@ public class ClauseSet {
                 }
             }
             catch (Exception e) {
-                System.out.println("Error in Hotel.readJSONHotels(): File error reading " + filename + ": " + e.getMessage());
+                System.out.println("Error in ClauseSet.parseFromFile(): File error reading " + filename + ": " + e.getMessage());
                 return null;
             }
             finally {
@@ -157,7 +167,7 @@ public class ClauseSet {
                     if (fr != null) fr.close();
                 }
                 catch (Exception e) {
-                    System.out.println("Exception in readJSONHotels()" + e.getMessage());
+                    System.out.println("Exception in ClauseSet.parseFromFile()" + e.getMessage());
                 }
             }                
         }   
