@@ -31,6 +31,7 @@ MA  02111-1307 USA
 package atp;
 import java.io.*;
 import java.util.*;
+import java.text.*;
 
 /** ***************************************************************
  *  A class representing a clause evaluation function. This is a pure
@@ -143,14 +144,19 @@ public abstract class ClauseEvaluationFunction {
                "cnf(c8,axiom,(c=d|h(i(a))!=h(i(e)))).\n";
         
         StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec)); 
-        c1.parse(st);
-        c2.parse(st);
-        c3.parse(st);
-        c4.parse(st);
-        c5.parse(st);
-        c6.parse(st);
-        c7.parse(st);
-        c8.parse(st);
+        try {
+            c1.parse(st);
+            c2.parse(st);
+            c3.parse(st);
+            c4.parse(st);
+            c5.parse(st);
+            c6.parse(st);
+            c7.parse(st);
+            c8.parse(st);
+        }
+        catch (ParseException p) {
+            System.out.println(p.getMessage());
+        }
     }
     
     /** ***************************************************************
