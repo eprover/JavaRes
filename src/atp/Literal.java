@@ -234,6 +234,7 @@ public class Literal {
      /** ***************************************************************
       *  Parse a literal. A literal is an optional negation sign '~', 
       *  followed by an atom. 
+      *  @return the Literal.  Note that there is a side effect on this Literal
       */
      public Literal parseLiteral(StreamTokenizer_s st) {
                 
