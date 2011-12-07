@@ -196,45 +196,38 @@ public class Prover2 {
     
     /** ***************************************************************
      */
-    private static ArrayList<ProofState> processTestFile(String filename, HashMap<String,String> opts, ArrayList<EvalStructure> evals) {
+    private static ProofState processTestFile(String filename, HashMap<String,String> opts, ArrayList<EvalStructure> evals) {
         
-        System.out.println("INFO in Prover2.processTestFile(): running file with " + opts);
-        ArrayList<ProofState> result = new ArrayList<ProofState>();
         FileReader fr = null;
         try {
             File fin = new File(filename);
-            System.out.println("INFO in Prover2.processTestFile(): reading file " + filename);
             fr = new FileReader(fin);
             if (fr != null) {
-                System.out.println("INFO in Prover2.processTestFile(): file not null");
                 StreamTokenizer_s st = new StreamTokenizer_s(fr);  
                 Term.setupStreamTokenizer(st);
                 ClauseSet cs = new ClauseSet();
                 cs.parse(st);                 
                 for (int i = 0; i < evals.size(); i++) {
                     EvalStructure eval = evals.get(i);
-                    System.out.println("INFO in Prover2.processTestFile(): running file with " + evals.size() + " evals");
                     if (opts.containsKey("allOpts")) {
                         ArrayList<ProofState> states = setAllStateOptions(cs,evals.get(i));
-                        System.out.println("INFO in Prover2.processTestFile(): created " + states.size() + " states");
                         for (int j = 0; j < states.size(); j++) {
-                            System.out.println("INFO in Prover2.processTestFile(): running file with " + states.size() + " states");
                             ProofState state = states.get(j);
                             int timeout = getTimeout(opts);
                             state.filename = filename;
-                            state.evalFunctionName = eval.name;
-                            System.out.println("INFO in Prover2.processTestFile(): " + state);
+                            state.evalFunctionName = eval.name;                            
                             state.res = state.saturate(timeout);
                             if (state.res != null)
-                                result.add(state);
+                                System.out.println(state.generateMatrixStatisticsString());
                         }
                     }
                     else {
                         ProofState state = new ProofState(cs,evals.get(i)); 
                         setStateOptions(state,opts);
-                        state.res = state.saturate(5);
+                        int timeout = getTimeout(opts);
+                        state.res = state.saturate(timeout);
                         if (state.res != null)
-                            result.add(state);
+                            return state;
                     }
                 }
             }
@@ -251,19 +244,7 @@ public class Prover2 {
                 System.out.println("Exception in Prover2.processTestFile()" + e.getMessage());
             }
         }  
-        return result;
-    }
-    
-    /** ***************************************************************  
-     */
-    private static String spreadsheetResults(ArrayList<ProofState> results) {
-    
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < results.size(); i++) {
-            ProofState value = results.get(i);
-            sb.append(value.generateMatrixStatisticsString() + "\n");
-        }
-        return sb.toString();
+        return null;
     }
     
     /** ***************************************************************
@@ -298,22 +279,17 @@ public class Prover2 {
                 File dir = new File(opts.get("filename")); 
                 String[] children = dir.list();
                 if (children != null) {
-                    ArrayList<ProofState> results = new ArrayList<ProofState>();
                     for (int i = 0; i < children.length; i++) {
                         String filename = opts.get("filename") + File.separator + children[i];
-                        if (filename.endsWith(".p")) {
-                            //System.out.println("************ Testing Problem " + children[i] + " **************");
-                            results.addAll(processTestFile(filename,opts,evals));
-                        }
+                        if (filename.endsWith(".p")) 
+                            processTestFile(filename,opts,evals);                        
                     }
-                    System.out.println(spreadsheetResults(results));
                 }
             }
             else {
                 evals = new ArrayList<EvalStructure>();
                 evals.add(ClauseEvaluationFunction.PickGiven5);
-                ArrayList<ProofState> testlist = processTestFile(opts.get("filename"),opts,evals);
-                ProofState state = testlist.get(0);
+                ProofState state = processTestFile(opts.get("filename"),opts,evals);
                 if (state != null) {
                     System.out.println(state.generateStatisticsString());
                     System.out.println("# SZS status Unsatisfiable");
