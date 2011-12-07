@@ -23,6 +23,7 @@ package atp;
 
 import java.io.*;
 import java.util.*;
+import java.text.*;
 
 public class ResControl {
  
@@ -91,12 +92,17 @@ public class ResControl {
    
         StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec));
         Term.setupStreamTokenizer(st);
-        conj.parse(st);
-        cset.parse(st);
-
-        String cstr = "cnf(ftest, axiom, p(X)|~q|p(a)|~q|p(Y)).";
-        st = new StreamTokenizer_s(new StringReader(cstr));
-        fclause.parse(st);
+        try {
+            conj.parse(st);
+            cset.parse(st);
+    
+            String cstr = "cnf(ftest, axiom, p(X)|~q|p(a)|~q|p(Y)).";
+            st = new StreamTokenizer_s(new StringReader(cstr));
+            fclause.parse(st);
+        }
+        catch (ParseException p) {
+            System.out.println(p.getMessage());
+        }
     }
            
     /** ***************************************************************
