@@ -187,13 +187,11 @@ public class Literal {
       * term. Equational literals are represented at terms with faux
       * function symbols "=" and "!=". 
       */
-     public Literal parseAtom(StreamTokenizer_s st) {
+     private Literal parseAtom(StreamTokenizer_s st) {
                 
          Term.setupStreamTokenizer(st);
          try {
-             //System.out.println("Entering Literal.parseAtom(): " + this);
              lhs = new Term();
-             //System.out.println("INFO in Literal.parseAtom(): (1) token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
              lhs.parse(st);
              if (st.ttype != st.TT_EOF)
                  st.nextToken();
@@ -209,15 +207,11 @@ public class Literal {
                  }
                  else
                      op = "=";
-                 rhs = new Term();
-
-                 //System.out.println("INFO in Literal.parseAtom(): (2) token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
+                 rhs = new Term();                
                  rhs = rhs.parse(st); 
                  if (st.ttype != st.TT_EOF)
                      st.nextToken();
              }
-             //System.out.println("Exiting Literal.parseAtom(): result: " + this);
-             //System.out.println("Exiting Literal.parseAtom(): token: " + st.ttype);
              return this;
          }
          catch (Exception ex) {
@@ -235,29 +229,23 @@ public class Literal {
       *  Parse a literal. A literal is an optional negation sign '~', 
       *  followed by an atom. 
       *  @return the Literal.  Note that there is a side effect on this Literal
+      *  The stream pointer is left looking at the token after the literal.
       */
      public Literal parseLiteral(StreamTokenizer_s st) {
                 
          Term.setupStreamTokenizer(st);
          try {
-             //System.out.println("Entering Literal.parseLiteral(): " + this);
-
-             //System.out.println("INFO in Literal.parseLiteral(): token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
-             st.nextToken();
+              st.nextToken();
              if (st.ttype == '|')
                  st.nextToken();
-             //System.out.println("INFO in Literal.parseLiteral(): token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
-             if (st.ttype == '~') {
+              if (st.ttype == '~') {
                  negated = true;
-                 //System.out.println("INFO in Literal.parseLiteral(): it's negated");
                  st.nextToken();  //restored 10/17
                  st.pushBack();
              }
              else
                  st.pushBack();
-             //System.out.println("INFO in Literal.parseLiteral(): token:" + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
              this.parseAtom(st);
-             //System.out.println("Exiting Literal.parseLiteral(): " + this);
              return this;
          }
          catch (Exception ex) {
@@ -283,16 +271,11 @@ public class Literal {
          try {
              Literal l = new Literal();
              l.parseLiteral(st);
-             //System.out.println("INFO in Literal.parseLiteralList(): (pre-loop result): " + l);
-             if (!l.toString().equals("$false")) 
+              if (!l.toString().equals("$false")) 
                  res.add(l);                          
              while (st.ttype == '|') {               
                  l = new Literal();
-                 //st.nextToken();   // removed 10/17
                  l.parseLiteral(st);
-                 //System.out.println("INFO in Literal.parseLiteralList(): (post loop result): " + l);
-                 //System.out.println("INFO in Literal.parseLiteralList(): (post loop result): " + st.ttype + " " + Character.toString((char) st.ttype) + "  word:" + st.sval);
-
                  if (!l.toString().equals("$false") && !Term.emptyString(l.toString())) 
                      res.add(l);                                   
              }
