@@ -76,8 +76,8 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
         st.ordinaryChars(37,44);   // %&'()*+,
         st.wordChars(45,46);       // -
         st.ordinaryChars(46,47);   // ./
-        st.wordChars(48,58);       // 0-9:
-        st.ordinaryChar(59);       // ;
+        st.wordChars(48,57);       // 0-9
+        st.ordinaryChars(58,59);   // :;
         st.ordinaryChars(60,62);   // <=>
         st.ordinaryChars(63,64);   // ?@
         st.wordChars(65,90);       // A-Z
