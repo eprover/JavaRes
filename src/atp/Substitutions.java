@@ -144,10 +144,14 @@ public class Substitutions {
      */    
     public Term apply(Term term) {
                 
+        //System.out.println("INFO in Substitutions.apply(): " + this + " " + term);
         Term res = new Term();
         if (term.termIsVar()) {
-            if (subst.containsKey(term))
+            //System.out.println("term is var");
+            if (subst.containsKey(term)) {
+                //System.out.println("contains key");
                 res = subst.get(term);
+            }
             else
                 res.t = term.t;
         }
@@ -157,6 +161,7 @@ public class Substitutions {
                 res.subterms.add(apply(term.subterms.get(i)));
             return res;
         }       
+        //System.out.println("INFO in Substitutions.apply(): returning: " + res);
         return res;
     }
     
