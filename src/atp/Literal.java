@@ -29,7 +29,7 @@ import java.util.*;
   */
 public class Literal {
     
-    public String op = "";
+    public String op = "";  // = or !=
     public Term lhs = null;  // if there's no op, then the literal is just a term, held in lhs
     public Term rhs = null;
     boolean negated = false;
@@ -150,11 +150,13 @@ public class Literal {
       */
      public Literal instantiate(Substitutions subst) {
 
+         //System.out.println("INFO in Literal.instantiate(): "  + this + " " + subst);
          Literal newLit = new Literal();
          newLit.negated = negated;
          newLit.lhs = subst.apply(lhs);
          if (!Term.emptyString(op))
              newLit.rhs = subst.apply(rhs); 
+         //System.out.println("returning: " + newLit);
          return newLit;
      }
      
