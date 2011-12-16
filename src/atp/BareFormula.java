@@ -92,13 +92,20 @@ public class BareFormula {
     }
     
     /** ***************************************************************
+     */
+    public static boolean isQuantifier(String s) {
+        
+        return s.equals("?") || s.equals("!");
+    }    
+    
+    /** ***************************************************************
      * a logical operator other than a quantifier,  negation, 'and' or
      * 'or'
      * @return null if not one of these operators and the operator 
      * otherwise
      */
     private static String isBinaryConnective(StreamTokenizer_s st) throws IOException {
-        
+
         if (st.ttype == '~') {           
             st.nextToken();
             if (st.ttype == '|' || st.ttype == '&') 
@@ -244,6 +251,24 @@ public class BareFormula {
     }
 
     /** ***************************************************************
+     * Substitute one variable for another
+     */
+    public BareFormula substitute(Substitutions subst) {
+        
+        //System.out.println("INFO in BareFormula.substitute(): "  + this + " " + subst);
+        BareFormula result = deepCopy();
+        if (child1 != null)
+            result.child1 = child1.substitute(subst);
+        if (child2 != null)
+            result.child2 = child2.substitute(subst);
+        if (lit1 != null)
+            result.lit1 = lit1.instantiate(subst);
+        if (lit2 != null)
+            result.lit2 = lit2.instantiate(subst);        
+        return result;
+    }
+    
+    /** ***************************************************************
      * Parse the "remainder" of a formula starting with the given quantor.
      * Stream tokenizer will be pointing on the opening square bracket to start. 
      */
@@ -376,6 +401,24 @@ public class BareFormula {
         return parseRecurse(st);
     }
 
+    /** ***************************************************************
+     * Convert a string to a BareFormula
+     */
+    public static BareFormula string2form(String s) {
+
+        try {
+            StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(s));
+            Term.setupStreamTokenizer(st);
+            return BareFormula.parse(st);
+        }
+        catch (Exception e) {
+            System.out.println("Error in BareFormula.string2form()");
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
     /** ***************************************************************
      * Setup function for clause/literal unit tests. Initialize
      * variables needed throughout the tests.
