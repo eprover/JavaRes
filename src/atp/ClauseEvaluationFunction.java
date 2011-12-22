@@ -143,16 +143,16 @@ public abstract class ClauseEvaluationFunction {
                "cnf(c7,axiom,(i(X1)=i(X2))).\n" +
                "cnf(c8,axiom,(c=d|h(i(a))!=h(i(e)))).\n";
         
-        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec)); 
+        Lexer lex = new Lexer(spec); 
         try {
-            c1.parse(st);
-            c2.parse(st);
-            c3.parse(st);
-            c4.parse(st);
-            c5.parse(st);
-            c6.parse(st);
-            c7.parse(st);
-            c8.parse(st);
+            c1.parse(lex);
+            c2.parse(lex);
+            c3.parse(lex);
+            c4.parse(lex);
+            c5.parse(lex);
+            c6.parse(lex);
+            c7.parse(lex);
+            c8.parse(lex);
         }
         catch (ParseException p) {
             System.out.println(p.getMessage());

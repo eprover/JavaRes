@@ -188,40 +188,43 @@ public class Literal {
       * In either case, we represent the atom as a first-order
       * term. Equational literals are represented at terms with faux
       * function symbols "=" and "!=". 
+      * The parser must be pointing to the token before the atom.
       */
-     private Literal parseAtom(StreamTokenizer_s st) {
+     private Literal parseAtom(Lexer lex) {
                 
-         Term.setupStreamTokenizer(st);
+         //System.out.println("INFO in Literal.parseAtom(): " + lex.literal);  
          try {
              lhs = new Term();
-             lhs.parse(st);
-             if (st.ttype != st.TT_EOF)
-                 st.nextToken();
-             else 
+             lhs.parse(lex);
+             //System.out.println("INFO in Literal.parseAtom() (2): " + lex.literal); 
+             String n = lex.look();
+             if (lex.type.equals(Lexer.EOFToken))
                  return this;
-             if (st.ttype == '=' || st.ttype == '!') {
-                 if (st.ttype == '!') {
-                     st.nextToken();
-                     if (st.ttype != '=')
-                         throw new Exception("!= expected");
-                     op = "=";
-                     negated = !negated;
-                 }
-                 else
-                     op = "=";
-                 rhs = new Term();                
-                 rhs = rhs.parse(st); 
-                 if (st.ttype != st.TT_EOF)
-                     st.nextToken();
+             if (lex.type.equals(Lexer.NotEqualSign)) {
+                 lex.next();
+                 op = "=";
+                 negated = !negated;
              }
+             else if (lex.type.equals(Lexer.EqualSign)) {
+                 lex.next();
+                 op = "=";
+             }
+             else if (lex.type.equals(Lexer.Implies)) {
+                 return this;
+             }
+             else
+                 return this;
+             //System.out.println("INFO in Literal.parseAtom() (3): " + lex.literal); 
+             rhs = new Term();                
+             rhs = rhs.parse(lex); 
+             //System.out.println("INFO in Literal.parseAtom() (4): " + lex.literal); 
+             //if (lex.type != Lexer.EOFToken)
+             //    lex.next();             
              return this;
          }
          catch (Exception ex) {
              System.out.println("Error in Literal.parseAtom(): " + ex.getMessage());
-             if (st.ttype == StreamTokenizer.TT_WORD)
-                 System.out.println("Error in Literal.parseAtom(): word token:" + st.sval);  
-             else
-                 System.out.println("Error in Literal.parseAtom(): token:" + st.ttype + " " + Character.toString((char) st.ttype));
+             System.out.println("Error in Literal.parseAtom(): token:" + lex.type + " " + lex.literal);
              ex.printStackTrace();
          }
          return null;
@@ -230,32 +233,28 @@ public class Literal {
      /** ***************************************************************
       *  Parse a literal. A literal is an optional negation sign '~', 
       *  followed by an atom. 
-      *  @return the Literal.  Note that there is a side effect on this Literal
-      *  The stream pointer is left looking at the token after the literal.
+      *  @return the Literal.  Note that there is a side effect on this Literal.
       */
-     public Literal parseLiteral(StreamTokenizer_s st) {
+     public Literal parseLiteral(Lexer lex) {
                 
-         Term.setupStreamTokenizer(st);
+         //System.out.println("INFO in Literal.parseLiteral(): " + lex.literal);  
          try {
-              st.nextToken();
-             if (st.ttype == '|')
-                 st.nextToken();
-              if (st.ttype == '~') {
-                 negated = true;
-                 st.nextToken();  //restored 10/17
-                 st.pushBack();
+             String s = lex.look();
+             if (s == Lexer.Or) {
+                 lex.next();
+                 lex.next();
              }
-             else
-                 st.pushBack();
-             this.parseAtom(st);
+             if (lex.type == Lexer.Negation) {
+                 negated = true;
+                 lex.next();   // pointer will be left on the negation
+             }
+             this.parseAtom(lex);
+             //System.out.println("INFO in Literal.parseLiteral(): exiting with pointer at: " + lex.literal);  
              return this;
          }
          catch (Exception ex) {
              System.out.println("Error in Literal.parseLiteral(): " + ex.getMessage());
-             if (st.ttype == StreamTokenizer.TT_WORD)
-                 System.out.println("Error in Literal.parseLiteral(): word token:" + st.sval);  
-             else
-                 System.out.println("Error in Literal.parseLiteral(): token:" + st.ttype + " " + Character.toString((char) st.ttype));
+             System.out.println("Error in Literal.parseLiteral(): token:" + lex.type + " " + lex.literal);
              ex.printStackTrace();
          }
          return null;
@@ -266,29 +265,35 @@ public class Literal {
       *  TPTP 3 syntax, the single word "$false" is interpreted as the
       *  false literal, and ignored.
       */
-     public static ArrayList<Literal> parseLiteralList(StreamTokenizer_s st) {
+     public static ArrayList<Literal> parseLiteralList(Lexer lex) {
                 
+         //System.out.println("INFO in Literal.parseLiteralList(): " + lex.literal);  
          ArrayList<Literal> res = new ArrayList<Literal>();
-         Term.setupStreamTokenizer(st);
          try {
              Literal l = new Literal();
-             l.parseLiteral(st);
-              if (!l.toString().equals("$false")) 
-                 res.add(l);                          
-             while (st.ttype == '|') {               
+             if (lex.look().equals("$false"))
+                 lex.next();
+             else {
+                 l.parseLiteral(lex);
+                 res.add(l);
+             }
+             //if (!l.toString().equals("$false")) 
+             //    res.add(l);                          
+             while (lex.look().equals(Lexer.Or)) {     
+                 lex.next();
                  l = new Literal();
-                 l.parseLiteral(st);
-                 if (!l.toString().equals("$false") && !Term.emptyString(l.toString())) 
-                     res.add(l);                                   
+                 if (lex.look().equals("$false"))
+                     lex.next();
+                 else {
+                     l.parseLiteral(lex);
+                     res.add(l);
+                 }                                  
              }
              return res;
          }
          catch (Exception ex) {
              System.out.println("Error in parseLiteralList(): " + ex.getMessage());
-             if (st.ttype == StreamTokenizer.TT_WORD)
-                 System.out.println("Error in parseLiteralList(): word token:" + st.sval);  
-             else
-                 System.out.println("Error in parseLiteralList(): token:" + st.ttype + " " + Character.toString((char) st.ttype));
+             System.out.println("Error in parseLiteralList(): token:" + lex.type + " " + lex.literal);
              ex.printStackTrace();
          }
          return null;
@@ -373,36 +378,43 @@ public class Literal {
       */
      public static void setup() {
                   
-         StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(input1));
-         Term.setupStreamTokenizer(st);
+         Lexer lex = new Lexer(input1);
          
+         System.out.println("INFO in Literal.setup(): input: " + input1);
          a1 = new Literal();
-         a1 = a1.parseLiteral(st);
+         a1 = a1.parseLiteral(lex);
          System.out.println("INFO in Literal.setup(): finished parsing a1: " + a1);
+         System.out.println("INFO in Literal.setup(): pointing at token: " + lex.literal);
          
          a2 = new Literal();
-         a2 = a2.parseLiteral(st);
+         a2 = a2.parseLiteral(lex);
          System.out.println("INFO in Literal.setup(): finished parsing a2: " + a2);
+         System.out.println("INFO in Literal.setup(): pointing at token: " + lex.literal);
          
          a3 = new Literal();
-         a3 = a3.parseLiteral(st);
+         a3 = a3.parseLiteral(lex);
          System.out.println("INFO in Literal.setup(): finished parsing a3: " + a3);
+         System.out.println("INFO in Literal.setup(): pointing at token: " + lex.literal);
          
          a4 = new Literal();
-         a4 = a4.parseLiteral(st);
+         a4 = a4.parseLiteral(lex);
          System.out.println("INFO in Literal.setup(): finished parsing a4: " + a4);
+         System.out.println("INFO in Literal.setup(): pointing at token: " + lex.literal);
          
          a5 = new Literal();
-         a5 = a5.parseLiteral(st);
+         a5 = a5.parseLiteral(lex);
          System.out.println("INFO in Literal.setup(): finished parsing a5: " + a5);
+         System.out.println("INFO in Literal.setup(): pointing at token: " + lex.literal);
          
          a6 = new Literal();
-         a6 = a6.parseLiteral(st);
+         a6 = a6.parseLiteral(lex);
          System.out.println("INFO in Literal.setup(): finished parsing a6: " + a6);
+         System.out.println("INFO in Literal.setup(): pointing at token: " + lex.literal);
          
          a7 = new Literal();
-         a7 = a7.parseLiteral(st);
-         System.out.println("INFO in Literal.setup(): finished parsing a7: " + a7);         
+         a7 = a7.parseLiteral(lex);
+         System.out.println("INFO in Literal.setup(): finished parsing a7: " + a7);
+         System.out.println("INFO in Literal.setup(): pointing at token: " + lex.literal);
      }
      
      /** ***************************************************************
@@ -488,61 +500,69 @@ public class Literal {
          System.out.println("INFO in testLitList(): all true");
          
          System.out.println("input2: " + input2);
-         StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(input2));
-         Term.setupStreamTokenizer(st);                                 
-         ArrayList<Literal> l2 = parseLiteralList(st);
+         Lexer lex = new Lexer(input2);                                
+         ArrayList<Literal> l2 = parseLiteralList(lex);
          System.out.println(l2);
          System.out.println(l2.size() == 5); 
          System.out.println();
        
          System.out.println("input3: " + input3);
-         st = new StreamTokenizer_s(new StringReader(input3));
-         Term.setupStreamTokenizer(st);
-         ArrayList<Literal> l3 = parseLiteralList(st);
+         lex = new Lexer(input3);
+         ArrayList<Literal> l3 = parseLiteralList(lex);
          System.out.println(l3);
          System.out.println(l3.size() == 0); 
          System.out.println();
          
          System.out.println("input4: " + input4);
-         st = new StreamTokenizer_s(new StringReader(input4));
-         Term.setupStreamTokenizer(st);
-         ArrayList<Literal> l4 = parseLiteralList(st);
+         lex = new Lexer(input4);
+         ArrayList<Literal> l4 = parseLiteralList(lex);
          System.out.println(l4);
          System.out.println(l4.size() == 1);     
          System.out.println();
          
          System.out.println("input5: " + input5);
-         st = new StreamTokenizer_s(new StringReader(input5));
-         Term.setupStreamTokenizer(st);
-         ArrayList<Literal> l5 = parseLiteralList(st);
+         lex = new Lexer(input5);
+         ArrayList<Literal> l5 = parseLiteralList(lex);
          System.out.println(l5);
          System.out.println(l5.size() == 2);
          System.out.println();         
          
          System.out.println("input6: " + input6);
-         st = new StreamTokenizer_s(new StringReader(input6));
-         Term.setupStreamTokenizer(st);
-         ArrayList<Literal> l6 = parseLiteralList(st);
+         lex = new Lexer(input6);
+         ArrayList<Literal> l6 = parseLiteralList(lex);
          System.out.println(l6);
          System.out.println(l6.size() == 3);  
      }
      
      /** ***************************************************************
-      * Test instantiation.
       */
-     public static void testInstantiate() {
+     public static void testTokens() {
          
+         Lexer lex = new Lexer("0 1 2 3");
+         try {
+             lex.next();
+             System.out.println(lex.literal);
+             lex.next();
+             System.out.println(lex.literal);
+             lex.look();
+             lex.next();
+
+             System.out.println(lex.literal);
+         }
+         catch (Exception e) {
+             System.out.println(e.getMessage());
+         }
      }
      
      /** ***************************************************************
      */
     public static void main(String[] args) {
         
-        //setup();
-        //testLiterals();
-        //testLitWeight();
+        setup();
+        testLiterals();
+        testLitWeight();
         testLitList();
-        //testInstantiate();
+        //testTokens();
     }
 
 }

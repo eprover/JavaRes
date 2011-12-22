@@ -116,10 +116,9 @@ public class SimpleProofState {
      */
     public static void evalSatResult(String spec, boolean provable) {
 
-        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec));
-        
+        Lexer lex = new Lexer(spec);        
         ClauseSet problem = new ClauseSet();
-        problem.parse(st);
+        problem.parse(lex);
 
         //System.out.println("SimpleProofState.evalSatResult(): problem: " + problem);
         SimpleProofState prover = new SimpleProofState(problem);

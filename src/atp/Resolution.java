@@ -166,14 +166,13 @@ public class Resolution {
            "cnf(c3,axiom,p(Z,X)|~p(f(Z),X0)).\n" +
            "cnf(c4,axiom,p(X,X)|p(a,f(Y))).\n" +
            "cnf(ftest,axiom,p(X)|~q|p(a)|~q|p(Y)).";
-       StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec));
-       Term.setupStreamTokenizer(st);
+       Lexer lex = new Lexer(spec);
        try {
-       c1.parse(st);
-       c2.parse(st);
-       c3.parse(st);
-       c4.parse(st);
-       c5.parse(st);
+       c1.parse(lex);
+       c2.parse(lex);
+       c3.parse(lex);
+       c4.parse(lex);
+       c5.parse(lex);
        System.out.println("Resolution.setup(): expected clauses:");
        System.out.println(spec);
        System.out.println("actual:");
@@ -185,10 +184,9 @@ public class Resolution {
        
        String spec2 = "cnf(not_p,axiom,~p(a)).\n" + 
        "cnf(taut,axiom,p(X4)|~p(X4)).\n";
-       st = new StreamTokenizer_s(new StringReader(spec2));
-       Term.setupStreamTokenizer(st);
-       c6.parse(st);
-       c7.parse(st);
+       lex = new Lexer(spec2);
+       c6.parse(lex);
+       c7.parse(lex);
        }
        catch (ParseException p) {
            System.out.println(p.getMessage());

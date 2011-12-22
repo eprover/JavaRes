@@ -594,7 +594,7 @@ public class Clausifier {
     
     /** ***************************************************************
      */
-    public static BareFormula clausify(BareFormula bf) {
+    public static ArrayList<Clause> clausify(BareFormula bf) {
     
         BareFormula result = bf.deepCopy();
         result = removeImpEq(result);
@@ -602,7 +602,11 @@ public class Clausifier {
         result = standardizeVariables(result);
         result = moveQuantifiersLeft(result);
         result = skolemization(result);
-        return result;
+        result = removeUQuant(result);
+        result = distributeAndOverOr(result);
+        ArrayList<BareFormula> forms = separateConjunctions(result);
+        ArrayList<Clause> clauses = flattenAll(forms);
+        return clauses;
     }
     
     /** ***************************************************************
@@ -795,7 +799,7 @@ public class Clausifier {
     private static void testClausification() {
         
         System.out.println();
-        System.out.println("================== testSkolemization ======================");
+        System.out.println("================== testClausification ======================");
         BareFormula form = BareFormula.string2form("((((![X]:a(X))|b(X))|(?[X]:(?[Y]:p(X,f(Y)))))<=>q(g(a),X))");
         System.out.println("input: " + form);
         System.out.println();
@@ -830,6 +834,20 @@ public class Clausifier {
     
     /** ***************************************************************
      */
+    private static void testClausificationSimple() {
+        
+        System.out.println();
+        System.out.println("================== testClausificationSimple ======================");
+        BareFormula form = BareFormula.string2form("((((![X]:a(X))|b(X))|(?[X]:(?[Y]:p(X,f(Y)))))<=>q(g(a),X))");
+        System.out.println("input: " + form);
+        System.out.println();
+        ArrayList<Clause> result = clausify(form);
+        for (int i = 0; i < result.size(); i++)
+            System.out.println(result.get(i));
+    }
+    
+    /** ***************************************************************
+     */
     public static void main(String[] args) {
         
         //testRemoveImpEq();
@@ -838,6 +856,6 @@ public class Clausifier {
         //testStandardizeVariables();
         //testSkolemization();
         //testDistribute();
-        testClausification();
+        testClausificationSimple();
     }
 }

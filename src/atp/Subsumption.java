@@ -113,23 +113,23 @@ public class Subsumption {
                     "cnf(axiom, c4, p(a)|q(f(X))).\n" +
                     "cnf(axiom, c5, p(a)|q(f(b))|p(X)).\n";
 
-        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec));
+        Lexer lex = new Lexer(spec);
         try {
-        c1 = new Clause();
-        c1.parse(st);
-        System.out.println(c1);
-        c2 = new Clause();
-        c2.parse(st);
-        System.out.println(c2);
-        c3 = new Clause();
-        c3.parse(st);
-        System.out.println(c3);
-        c4 = new Clause();
-        c4.parse(st);
-        System.out.println(c4);
-        c5 = new Clause();
-        c5.parse(st); 
-        System.out.println(c5);
+            c1 = new Clause();
+            c1.parse(lex);
+            System.out.println(c1);
+            c2 = new Clause();
+            c2.parse(lex);
+            System.out.println(c2);
+            c3 = new Clause();
+            c3.parse(lex);
+            System.out.println(c3);
+            c4 = new Clause();
+            c4.parse(lex);
+            System.out.println(c4);
+            c5 = new Clause();
+            c5.parse(lex); 
+            System.out.println(c5);
         }
         catch (ParseException p) {
             System.out.println(p.getMessage());

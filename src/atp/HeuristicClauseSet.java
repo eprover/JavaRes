@@ -158,7 +158,7 @@ public class HeuristicClauseSet extends ClauseSet {
         ArrayList<Integer> indices = new ArrayList<Integer>();
         Literal lit = new Literal();
         StreamTokenizer_s st = new StreamTokenizer_s(new StringReader("p"));
-        lit.parseLiteral(st);
+        // !!! lit.parseLiteral(st);
         cs.getResolutionLiterals(lit, clauseres, indices);
         System.out.println(clauseres);
         System.out.println(indices);

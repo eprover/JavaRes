@@ -203,10 +203,9 @@ public class Prover2 {
             File fin = new File(filename);
             fr = new FileReader(fin);
             if (fr != null) {
-                StreamTokenizer_s st = new StreamTokenizer_s(fr);  
-                Term.setupStreamTokenizer(st);
+                Lexer lex = new Lexer(fin);  
                 ClauseSet cs = new ClauseSet();
-                cs.parse(st);                 
+                cs.parse(lex);                 
                 for (int i = 0; i < evals.size(); i++) {
                     EvalStructure eval = evals.get(i);
                     if (opts.containsKey("allOpts")) {

@@ -538,9 +538,9 @@ public class ProofState {
     public static void evalSatResult(String spec, boolean provable) {
 
         System.out.println("INFO in ProofState.evalSatResult()");  
-        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec));        
+        Lexer lex = new Lexer(spec);        
         ClauseSet problem = new ClauseSet();
-        problem.parse(st);      
+        problem.parse(lex);      
         evalSatResult(problem,provable);
     }  
     

@@ -74,6 +74,14 @@ public class ClauseSet {
 
         clauses.addAll(clauseSet.clauses);
     }
+
+    /** ***************************************************************
+     * Add a clause to the clause set.
+     */ 
+    public void addAll(ArrayList<Clause> clauseSet) {
+
+        clauses.addAll(clauseSet);
+    }
     
     /** ***************************************************************
      * Remove a clause from the clause set and return it.
@@ -120,13 +128,13 @@ public class ClauseSet {
      * Parse a sequence of clauses from st and add them to the
      * set. Return number of clauses parsed.
      */ 
-    public int parse(StreamTokenizer_s st) {
+    public int parse(Lexer lex) {
 
         int count = 0;
-        while (st.ttype != StreamTokenizer_s.TT_EOF) {
+        while (lex.type != Lexer.EOFToken) {
             Clause clause = new Clause();
             try {
-                Clause c = clause.parse(st);
+                Clause c = clause.parse(lex);
                 if (c == null)
                     return 0;
             }
@@ -150,11 +158,10 @@ public class ClauseSet {
             FileReader fr = null;
             try {
                 File fin  = new File(filename);
-                fr = new FileReader(fin);
                 if (fr != null) {
-                    StreamTokenizer_s st = new StreamTokenizer_s(fr);               
+                    Lexer lex = new Lexer(fin);               
                     ClauseSet cs = new ClauseSet();
-                    cs.parse(st);
+                    cs.parse(lex);
                     return cs;
                 }
             }
@@ -181,9 +188,9 @@ public class ClauseSet {
         String spec2 = "cnf(axiom, humans_are_mortal, mortal(X)|~human(X)).\n" + 
         "cnf(axiom, socrates_is_human, human(socrates)).\n" +
         "cnf(negated_conjecture, is_socrates_mortal, ~mortal(socrates)).\n";
-        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec2));        
+        Lexer lex = new Lexer(spec2);        
         ClauseSet problem = new ClauseSet();
-        problem.parse(st);
+        problem.parse(lex);
         System.out.println("ClauseSet test.  Expected: "); 
         System.out.println(spec2);
         System.out.println("Actual: ");

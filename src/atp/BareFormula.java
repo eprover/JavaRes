@@ -88,7 +88,7 @@ public class BareFormula {
         
         return s.equals("&") || s.equals("|") || s.equals("->") || 
             s.equals("<-") || s.equals("<=>") || s.equals( "<~>") || 
-            s.equals("~|") || s.equals("~&");
+            s.equals("=>") || s.equals("<=") || s.equals("~|") || s.equals("~&");
     }
     
     /** ***************************************************************
@@ -104,46 +104,13 @@ public class BareFormula {
      * @return null if not one of these operators and the operator 
      * otherwise
      */
-    private static String isBinaryConnective(StreamTokenizer_s st) throws IOException {
+    private static String isBinaryConnective(String s) throws IOException {
 
-        if (st.ttype == '~') {           
-            st.nextToken();
-            if (st.ttype == '|' || st.ttype == '&') 
-                return "~" + Character.toString((char) st.ttype);
-            else
-                return null;
-        }
-        if (st.ttype == '<') {
-            st.nextToken();
-            if (st.ttype == '=') {
-                st.nextToken();
-                if (st.ttype == '>')
-                    return "<=>";
-                else {
-                    st.pushBack();
-                    return null;
-                }
-            }
-            if (st.ttype == '-') {
-                st.nextToken();
-                if (st.ttype == '>')
-                    return "<->";
-                else {
-                    st.pushBack();
-                    return "<-";
-                }                    
-            }                
-        }
-        if (st.ttype == '-') {
-            st.nextToken();
-            if (st.ttype == '>')
-                return "->";
-            else {
-                st.pushBack();
-                return null;
-            }
-        }
-        return null;
+        if (s.equals(Lexer.Nand) || s.equals(Lexer.Nor) || s.equals(Lexer.BImplies) || 
+            s.equals(Lexer.Implies) || s.equals(Lexer.Equiv) || s.equals(Lexer.Xor))
+            return s;
+        else
+            return null;
     }
     
     /** ***************************************************************
@@ -272,31 +239,29 @@ public class BareFormula {
      * Parse the "remainder" of a formula starting with the given quantor.
      * Stream tokenizer will be pointing on the opening square bracket to start. 
      */
-    public static BareFormula parseQuantified(StreamTokenizer_s st, String quantor) 
-    throws ParseException, IOException {
+    public static BareFormula parseQuantified(Lexer lex, String quantor) 
+        throws ParseException, IOException {
 
-        st.nextToken();
-        st.pushBack();
-        if (!Character.isUpperCase(st.sval.charAt(0)))
-            throw new ParseException("expected upper case identifier, found " + st.sval,0);
+        //System.out.println("INFO in BareFormula.parseQuantified(): " + lex.literal);
+        lex.checkTok(Lexer.IdentUpper);
         Literal var = new Literal();
-        var = var.parseLiteral(st);
+        var = var.parseLiteral(lex);
+        //System.out.println("INFO in BareFormula.parseQuantified(): var: " + var);
         BareFormula rest = null;
-        if (st.ttype == ',') 
-            rest = parseQuantified(st, quantor);        
+        if (lex.testTok(Lexer.Comma)) {
+            lex.acceptTok(Lexer.Comma);
+            rest = parseQuantified(lex, quantor);
+        }
         else {
-            if (st.ttype != ']')
-                throw new ParseException("Error in BareFormula.parseQuantified(): expected ']', found " + st.ttype,0);
-            st.nextToken();
-            if (st.ttype != ':')
-                throw new ParseException("Error in BareFormula.parseQuantified(): expected ':', found " + st.ttype,0);
-            st.nextToken();
-            rest = parseUnitaryFormula(st);            
+            lex.acceptTok(Lexer.CloseSquare);
+            lex.acceptTok(Lexer.Colon);
+            rest = parseUnitaryFormula(lex);            
         }
         BareFormula result = new BareFormula();
         result.op = quantor;
         result.lit1 = var;
         result.child2 = rest;  // not sure if this is right
+        //System.out.println("INFO in  BareFormula.parseQuantified(): returning: " + result);
         return result;
     }
 
@@ -305,41 +270,38 @@ public class BareFormula {
      * This can be the first unitary formula of a binary formula, of course.
      * It expects stream pointer to be on the first token.
      */
-    public static BareFormula parseUnitaryFormula(StreamTokenizer_s st) 
-    throws IOException, ParseException {
+    public static BareFormula parseUnitaryFormula(Lexer lex)
+        throws IOException, ParseException {
 
+        //System.out.println("INFO in BareFormula.parseUnitaryFormula(): token: " + lex.literal);
         BareFormula res = null;
-        if (st.ttype == '?' || st.ttype == '!') {
-            String quantor = Character.toString((char) st.ttype);
-            st.nextToken();
-            if (st.ttype != '[')
-                throw new ParseException("Error in BareFormula.parseQuantified(): expected '[',found '" + 
-                        (char) st.ttype + "'",0);
-            res = parseQuantified(st, quantor);
+        if (lex.testTok(Lexer.quant)) {
+            String quantor = lex.lookLit();
+            lex.next();
+            lex.acceptTok(Lexer.OpenSquare);
+            res = parseQuantified(lex, quantor);
         }
-        else if (st.ttype == '(') {
-            st.nextToken();                      
-            res = BareFormula.parseRecurse(st);
-            if (st.ttype != ')')
-                throw new ParseException("Error in BareFormula.parseUnitaryFormula(): expected ')', found " + 
-                        (char) st.ttype,0);
-            st.nextToken();
+        else if (lex.testTok(Lexer.OpenPar)) {
+            lex.acceptTok(Lexer.OpenPar);                      
+            res = BareFormula.parse(lex);
+            lex.acceptTok(Lexer.ClosePar);                
         }
-        else if (st.ttype == '~') {
-            st.nextToken();
-            BareFormula subform = parseUnitaryFormula(st);
+        else if (lex.testTok(Lexer.Negation)) {
+            lex.acceptTok(Lexer.Negation);
+            BareFormula subform = parseUnitaryFormula(lex);
             res = new BareFormula();
             res.op = "~";
             res.child1 = subform;
         }
         else {
-            st.pushBack();
+            //System.out.println("INFO in BareFormula.parseUnitaryFormula(): (2) token: " + lex.literal);
             Literal lit = new Literal();
-            lit = lit.parseLiteral(st);  // stream pointer looks at token after literal
+            lit = lit.parseLiteral(lex);  // stream pointer looks at token after literal
             res = new BareFormula();
             res.op = "";
             res.lit1 = lit;
         }
+        //System.out.println("INFO in BareFormula.parseUnitaryFormula(): returning: " + res);
         return res;
     }
 
@@ -348,13 +310,14 @@ public class BareFormula {
      * and continues ([&|] form *).
      * It expects stream to be pointing at the operator.
      */
-    public static BareFormula parseAssocFormula(StreamTokenizer_s st, BareFormula head) 
-    throws IOException, ParseException {
+    public static BareFormula parseAssocFormula(Lexer lex, BareFormula head) 
+        throws IOException, ParseException {
 
-        String op = Character.toString((char) st.ttype);
-        while (op.equals(Character.toString((char) st.ttype))) {
-            st.nextToken();
-            BareFormula next = parseUnitaryFormula(st);
+        //System.out.println("INFO in BareFormula.parseAssocFormula(): token: " + lex.literal);
+        String op = lex.lookLit();
+        while (lex.testLit(op)) {
+            lex.acceptLit(op);
+            BareFormula next = parseUnitaryFormula(lex);
             BareFormula newhead = new BareFormula();
             newhead.op = op;
             newhead.child1 = head;
@@ -368,37 +331,25 @@ public class BareFormula {
      * Parse a (naked) formula.  Stream pointer must be at the start 
      * of the expression.
      */
-    public static BareFormula parseRecurse(StreamTokenizer_s st) 
-    throws IOException, ParseException {
+    public static BareFormula parse(Lexer lex) throws IOException, ParseException {
       
-        BareFormula res = parseUnitaryFormula(st);
-        if (st.ttype == '|' || st.ttype == '&') 
-            res = parseAssocFormula(st, res.deepCopy());        
-        else {
-            if (st.ttype != StreamTokenizer_s.TT_EOF) {
-                String op = isBinaryConnective(st);
-                if (op != null) {
-                    st.nextToken();
-                    BareFormula rest = parseUnitaryFormula(st);
-                    BareFormula lhs = res.deepCopy();
-                    res = new BareFormula();
-                    res.child1 = lhs;
-                    res.op = op;
-                    res.child2 = rest;  
-                }
-            }
+        //System.out.println("INFO in BareFormula.parseRecurse(): token: " + lex.literal);        
+        BareFormula res = parseUnitaryFormula(lex);
+        //System.out.println("INFO in BareFormula.parseRecurse(): returned from unitary with token: " + lex.literal);
+        
+        if (lex.testTok(Lexer.andOr)) 
+            res = parseAssocFormula(lex, res.deepCopy());           
+        else if (lex.testTok(Lexer.binaryRel)) {
+            String op = lex.lookLit();
+            lex.next();
+            BareFormula rest = parseUnitaryFormula(lex);
+            BareFormula lhs = res.deepCopy();
+            res = new BareFormula();
+            res.child1 = lhs;
+            res.op = op;
+            res.child2 = rest;  
         }
         return res;
-    }
-    
-    /** ***************************************************************
-     * Parse a (naked) formula.  Stream pointer must be before the start 
-     * of the expression.
-     */
-    public static BareFormula parse(StreamTokenizer_s st) throws IOException, ParseException {
-
-        st.nextToken(); 
-        return parseRecurse(st);
     }
 
     /** ***************************************************************
@@ -407,9 +358,8 @@ public class BareFormula {
     public static BareFormula string2form(String s) {
 
         try {
-            StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(s));
-            Term.setupStreamTokenizer(st);
-            return BareFormula.parse(st);
+            Lexer lex = new Lexer(s);
+            return BareFormula.parse(lex);
         }
         catch (Exception e) {
             System.out.println("Error in BareFormula.string2form()");
@@ -434,19 +384,18 @@ public class BareFormula {
 
         try {
             System.out.println("INFO in BareFormula.testNakedFormula()");
-            StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(nformulas));
-            Term.setupStreamTokenizer(st);
+            Lexer lex = new Lexer(nformulas);
             System.out.println("Parsing formula: " + nformulas);
-            BareFormula f1 = BareFormula.parse(st);
+            BareFormula f1 = BareFormula.parse(lex);
             System.out.println("INFO in BareFormula.testNakedFormula(): f1: " + f1);
             System.out.println();
             
-            st.pushBack();
-            BareFormula f2 = BareFormula.parse(st);
+            //st.pushBack();
+            BareFormula f2 = BareFormula.parse(lex);
             System.out.println("INFO in BareFormula.testNakedFormula(): f2: " + f2);
             System.out.println();
-            st.pushBack();
-            BareFormula f3 = BareFormula.parse(st);
+            //st.pushBack();
+            BareFormula f3 = BareFormula.parse(lex);
             System.out.println("INFO in BareFormula.testNakedFormula(): f3: " + f3);
             System.out.println();
             System.out.println("all should be true:");

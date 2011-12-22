@@ -38,9 +38,9 @@ public class Prover1 {
                     File fin  = new File(args[0]);
                     fr = new FileReader(fin);
                     if (fr != null) {
-                        StreamTokenizer_s st = new StreamTokenizer_s(fr);               
+                        Lexer lex = new Lexer(fin);               
                         ClauseSet cs = new ClauseSet();
-                        cs.parse(st);
+                        cs.parse(lex);
                         SimpleProofState state = new SimpleProofState(cs);
                         Clause res = state.saturate();
 

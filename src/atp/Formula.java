@@ -21,6 +21,8 @@ MA  02111-1307 USA
 
 import java.io.*;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 /** ***************************************************************
  * Datatype for the complete first-order formula, including 
@@ -66,39 +68,23 @@ public class Formula {
      *  distinguish "axiom", "conjecture", and "negated_conjecture", and
      *  map everything else to "plain".
      */
-    public static Formula parse(StreamTokenizer_s st) 
-    throws IOException, ParseException {
+    public static Formula parse(Lexer lex) throws IOException, ParseException {
 
-        st.nextToken();
-        if (!st.sval.equals("fof"))
-            throw new ParseException("Error in Formula.parse(): expected 'fof', found " + st.sval,0);
-        st.nextToken();
-        if (st.ttype != '(')
-            throw new ParseException("Error in Formula.parse(): expected '(', found " + st.ttype,0);
-        st.nextToken();
-        String name = st.sval;
-        if (!Character.isLowerCase(name.charAt(0)))
-            throw new ParseException("Error in Formula.parse(): expected lower case identifier, found " + st.sval,0);
-        st.nextToken();
-        if (st.ttype != ',')
-            throw new ParseException("Error in Formula.parse(): expected ',', found " + st.ttype,0);
-
-        st.nextToken();
-        String type = st.sval;
+        lex.acceptLit("fof");
+        lex.acceptTok(Lexer.OpenPar);
+        String name = lex.lookLit();
+        lex.acceptTok(Lexer.IdentLower);
+        lex.acceptTok(Lexer.Comma);
+        String type = lex.lookLit();
         if (!type.equals("axiom") && !type.equals("conjecture") && !type.equals("negated_conjecture"))
             type = "plain";
-        st.nextToken();
-        if (st.ttype != ',')
-            throw new ParseException("Error in Formula.parse(): expected ',', found " + st.ttype,0);
+        lex.acceptTok(Lexer.IdentLower);
+        lex.acceptTok(Lexer.Comma);
 
-        BareFormula bform = BareFormula.parse(st);
+        BareFormula bform = BareFormula.parse(lex);
         
-        //st.nextToken();
-        if (st.ttype != ')')
-            throw new ParseException("Error in Formula.parse(): expected ')', found " + st.ttype,0);
-        st.nextToken();
-        if (st.ttype != '.')
-            throw new ParseException("Error in Formula.parse(): expected '.', found " + st.ttype,0);
+        lex.acceptTok(Lexer.ClosePar);
+        lex.acceptTok(Lexer.FullStop);
 
         Formula f = new Formula();
         f.form = bform;
@@ -108,26 +94,116 @@ public class Formula {
     }
     
     /** ***************************************************************
+     */
+    public static ClauseSet file2clauses(Lexer lex) {
+        
+        ClauseSet cs = new ClauseSet();
+        while (lex.type != Lexer.EOFToken) {
+            try {
+                String id = lex.look();
+                System.out.println("INFO in Formula.parse(): id: " + lex.literal);
+                if (id.equals("include")) {
+                    lex.next();
+                    lex.next();
+                    if (lex.type != Lexer.OpenPar)
+                        throw new ParseException("Error in Formula.parse(): expected '(', found " + lex.literal,0);
+                    lex.next();
+                    String name = lex.literal;
+                    if (name.charAt(0) == '\'') {
+                        String filename = name.substring(1,name.length()-1);
+                        File f = new File(filename);
+                        Lexer lex2 = new Lexer(f);
+                        cs.addAll(file2clauses(lex2));
+                    }
+                    lex.next();
+                    if (lex.literal != Lexer.ClosePar)
+                        throw new ParseException("Error in Formula.parse(): expected ')', found " + lex.literal,0);
+                    lex.next();
+                    if (lex.literal != Lexer.FullStop)
+                        throw new ParseException("Error in Formula.parse(): expected '.', found " + lex.literal,0);
+                }
+                if (id.equals("fof")) {
+                    Formula f = Formula.parse(lex);
+                    System.out.println("INFO in Formula.parse(): fof: " + f);
+                    if (f.form != null) 
+                        cs.addAll(Clausifier.clausify(f.form));                    
+                }
+                if (id.equals("cnf")) {
+                    Clause clause = new Clause();
+                    clause = clause.parse(lex);
+                    System.out.println("INFO in Formula.parse(): cnf: " + clause);
+                    cs.add(clause);
+                }
+            }
+            catch (ParseException p) {
+                System.out.println(p.getMessage());
+                p.printStackTrace();
+                return cs;
+            }
+            catch (IOException p) {
+                System.out.println(p.getMessage());
+                p.printStackTrace();
+                return cs;
+            }
+        }
+        return cs;
+    }
+    
+    /** ***************************************************************
+     */
+    private static ClauseSet file2clauses(String filename) {
+        
+        FileReader fr = null;
+        try {
+            File fin = new File(filename);
+            fr = new FileReader(fin);
+            if (fr != null) {
+                Lexer lex = new Lexer(fin);
+                return file2clauses(lex);
+            }
+        }
+        catch (IOException e) {
+            System.out.println("Error in Formula.file2clauses(): File error reading " + filename + ": " + e.getMessage());
+            return null;
+        }
+        finally {
+            try {
+                if (fr != null) fr.close();
+            }
+            catch (Exception e) {
+                System.out.println("Exception in Formula.file2clauses()" + e.getMessage());
+            }
+        }  
+        return null;
+    }
+    
+    /** ***************************************************************
      * Setup function for clause/literal unit tests. Initialize
      * variables needed throughout the tests.
      */
     public static String wformulas = "fof(small, axiom, ![X]:(a(x) | ~a=b))." + 
         "fof(complex, conjecture, (![X]:a(X)|b(X)|?[X,Y]:(p(X,f(Y))))<=>q(g(a),X))." + 
-        "fof(clean, conjecture, ((((![X]:a(X))|b(X))|(?[X]:(?[Y]:p(X,f(Y)))))<=>q(g(a),X))).";
+        "fof(clean, conjecture, ((((![X]:a(X))|b(X))|(?[X]:(?[Y]:p(X,f(Y)))))<=>q(g(a),X)))." + 
+        "fof(queens_p,axiom,(queens_p => ![I,J]:((le(s(n0),I)& le(I,n) & le(s(I),J) & le(J,n) )=> ( p(I) != p(J) & plus(p(I),I) != plus(p(J),J) & minus(p(I),I) != minus(p(J),J) ) ) )).";
             
     /** ***************************************************************
      */
     public static void testWrappedFormula() {
         
         try {
-            StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(wformulas));
-            Term.setupStreamTokenizer(st);      
-            Formula f1 = Formula.parse(st);
-            System.out.println(f1);
-            Formula f2 = Formula.parse(st);
-            System.out.println(f2);
-            Formula f3 = Formula.parse(st);
-            System.out.println(f3);
+            Lexer lex = new Lexer(wformulas); 
+            Formula f1 = Formula.parse(lex);
+            System.out.println("Result 1: " + f1);
+            System.out.println();
+            Formula f2 = Formula.parse(lex);
+            System.out.println("Result 2: " + f2);
+            System.out.println();
+            Formula f3 = Formula.parse(lex);
+            System.out.println("Result 3: " + f3);
+            System.out.println();
+            Formula f4 = Formula.parse(lex);
+            System.out.println("Result 4: " + f4);
+            System.out.println();
         }
         catch (Exception e) {
             System.out.println("Error in Formula.testWrappedFormula()");
@@ -140,6 +216,7 @@ public class Formula {
      */
     public static void main(String[] args) {
         
-        testWrappedFormula();
+        //testWrappedFormula();
+        System.out.println(file2clauses(args[0]));
     }
 }

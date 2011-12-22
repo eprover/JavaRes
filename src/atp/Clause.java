@@ -41,12 +41,12 @@ import java.text.*;
 public class Clause {
 
     public static int clauseIDcounter = 0;
-    ArrayList<Literal> literals = new ArrayList<Literal>(); 
-    String type = "plain";
-    String name = "";
-    ArrayList<String> support = new ArrayList<String>();  // clauses from which this clause is derived
-    String rationale = "input";                           // if not input, reason for derivation
-    ArrayList<Integer> evaluation = null;  // Must be the same order as clause evaluation function list in EvalStructure
+    public ArrayList<Literal> literals = new ArrayList<Literal>(); 
+    private String type = "plain";
+    public String name = "";
+    public ArrayList<String> support = new ArrayList<String>();  // clauses from which this clause is derived
+    public String rationale = "input";                           // if not input, reason for derivation
+    public ArrayList<Integer> evaluation = null;  // Must be the same order as clause evaluation function list in EvalStructure
     
     /** ***************************************************************
      * Print for use by GraphViz.  Convert vertical bar to HTML code and
@@ -166,66 +166,66 @@ public class Clause {
      * @return the parsed clause.  Note also that this is the side effect 
      * on the clause instance
      */
-    public Clause parse(StreamTokenizer_s st) throws ParseException {
+    public Clause parse(Lexer lex) throws ParseException {
                
         try {
-            Term.setupStreamTokenizer(st);
-            st.nextToken(); 
-            if (st.ttype == '%')
-                return this;
-            if (st.ttype != StreamTokenizer.TT_WORD || !st.sval.equals("cnf"))
+            //System.out.println("INFO in Clause.parse(): " + lex.literal);
+            lex.next(); 
+            //if (st.ttype == '%')
+            //    return this;
+            if (!lex.literal.equals("cnf"))
                 throw new Exception("\"cnf\" expected.");
-            st.nextToken(); 
-            if (st.ttype != '(')
-                throw new Exception("Open paren expected. Instead found '" + st.ttype + "' with clause so far " + this);
-            st.nextToken(); 
-            if (st.ttype == StreamTokenizer.TT_WORD && Character.isLowerCase(st.sval.charAt(0)))
-                name = st.sval;
+            lex.next(); 
+            if (!lex.type.equals(Lexer.OpenPar))
+                throw new Exception("Open paren expected. Instead found '" + lex.literal + "' with clause so far " + this);
+            lex.next(); 
+            if (lex.type == Lexer.IdentLower)
+                name = lex.literal;
             else 
                 throw new Exception("Identifier expected.");
-            st.nextToken(); 
-            if (st.ttype != ',')
-                throw new Exception("Comma expected. Instead found '" + st.ttype + "' with clause so far " + this);
-            st.nextToken(); 
-            if (st.ttype == StreamTokenizer.TT_WORD && Character.isLowerCase(st.sval.charAt(0))) {                 
-                type = st.sval;
+            lex.next(); 
+            if (!lex.type.equals(Lexer.Comma))
+                throw new Exception("Comma expected. Instead found '" + lex.literal + "' with clause so far " + this);
+            lex.next(); 
+            if (lex.type == Lexer.IdentLower) {                 
+                type = lex.literal;
                 //if (!type.equals("axiom") && !type.equals("negated_conjecture"))
                 //   type = "plain";
             }
             else 
                 throw new Exception("Clause type enumeration expected.");
-            st.nextToken(); 
-            if (st.ttype != ',')
-                throw new Exception("Comma expected. Instead found '" + st.ttype + "' with clause so far " + this);
-            st.nextToken(); 
-            st.pushBack();
-            if (st.ttype == '(') {
-                st.nextToken();
-                literals = Literal.parseLiteralList(st);
-                st.nextToken(); 
-                if (st.ttype != ')')
-                    throw new Exception("Close paren expected. Instead found '" + st.ttype + "' with clause so far " + this);
+            lex.next(); 
+            if (!lex.type.equals(Lexer.Comma))
+                throw new Exception("Comma expected. Instead found '" + lex.literal + "' with clause so far " + this);
+            String s = lex.look(); 
+            //System.out.println("INFO in Clause.parse() (2): found token: " + s);
+            if (s.equals(Lexer.OpenPar)) {
+                //System.out.println("INFO in Clause.parse(): found open paren at start of bare clause");
+                lex.next();
+                literals = Literal.parseLiteralList(lex);
+                lex.next(); 
+                if (!lex.type.equals(Lexer.ClosePar))
+                    throw new Exception("Literal list close paren expected. Instead found '" + lex.literal + "' with clause so far " + this);
             }
-            else
-                literals = Literal.parseLiteralList(st);
-            //st.nextToken(); 
-            if (st.ttype != ')')
-                throw new Exception("Close paren expected. Instead found '" + st.ttype + "' with clause so far " + this);
-            st.nextToken(); 
-            if (st.ttype != '.')
-                throw new Exception("Period expected. Instead found '" + st.ttype + "' with clause so far " + this);
+            else {
+                literals = Literal.parseLiteralList(lex);
+            }
+
+            lex.next();
+            if (!lex.type.equals(Lexer.ClosePar))
+                throw new Exception("Clause close paren expected. Instead found '" + lex.literal + "' with clause so far " + this);
+            lex.next(); 
+            if (!lex.type.equals(Lexer.FullStop))
+                throw new Exception("Period expected. Instead found '" + lex.literal + "' with clause so far " + this);
             //System.out.println("INFO in Clause.parse(): completed parsing: " + this);
             return this;
         }
         catch (Exception ex) {
             Prover2.errors = "input error";
-            if (st.ttype == StreamTokenizer.TT_EOF)
+            if (lex.type == Lexer.EOFToken)
                 return this;
             System.out.println("Error in Clause.parse(): " + ex.getMessage());
-            if (st.ttype == StreamTokenizer.TT_WORD)
-                System.out.println("Error in Clause.parse(): word token:" + st.sval); 
-            else
-                System.out.println("Error in Term.parseTermList(): token:" + st.ttype + " " + Character.toString((char) st.ttype));  
+            System.out.println("Error in Term.parseTermList(): token:" + lex.literal);  
             ex.printStackTrace();
             throw (new ParseException("input error",0));
         }
@@ -235,9 +235,8 @@ public class Clause {
      */
     public Clause string2Clause(String s) throws ParseException {
     
-        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(s));
-        Term.setupStreamTokenizer(st);
-        return parse(st);
+        Lexer lex = new Lexer(s);
+        return parse(lex);
     }
     
     /** ***************************************************************
@@ -366,8 +365,8 @@ public class Clause {
      */
     public static void setup() {
 
-        str1 = "cnf(test,axiom,p(a)|p(f(X))).\n" +
-               "cnf(test,axiom,(p(a)|p(f(X)))).\n" +
+        str1 = "cnf(test1,axiom,p(a)|p(f(X))).\n" +
+               "cnf(test2,axiom,(p(a)|p(f(X)))).\n" +
                "cnf(test3,lemma,(p(a)|~p(f(X)))).\n" +
                "cnf(taut,axiom,p(a)|q(a)|~p(a)).\n" +
                "cnf(dup,axiom,p(a)|q(a)|p(a)).\n" +
@@ -381,45 +380,44 @@ public class Clause {
 
         System.out.println("INFO in Clause.testClauses(): expected results: \n" + str1);
         System.out.println("results:");
-        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(str1));
-        Term.setupStreamTokenizer(st);
+        Lexer lex = new Lexer(str1);
                 
         try {
         Clause c1 = new Clause();        
-        c1.parse(st);
-        assert c1.toString().equals("cnf(test,axiom,p(a)|p(f(X))).") : 
-               "Failure. " + c1.toString() + " not equal to cnf(test,axiom,p(a)|p(f(X))).";
-        System.out.println(c1);
+        c1.parse(lex);
+        assert c1.toString().equals("cnf(test1,axiom,p(a)|p(f(X))).") : 
+               "Failure. " + c1.toString() + " not equal to cnf(test1,axiom,p(a)|p(f(X))).";
+        System.out.println("c1: " + c1);
         
         Clause c2 = new Clause();
-        c2.parse(st);
-        assert c2.toString().equals("cnf(test,axiom,(p(a)|p(f(X)))).") : 
-            "Failure. " + c2.toString() + " not equal to cnf(test,axiom,(p(a)|p(f(X)))).";
-        System.out.println(c2);
+        c2.parse(lex);
+        assert c2.toString().equals("cnf(test2,axiom,(p(a)|p(f(X)))).") : 
+            "Failure. " + c2.toString() + " not equal to cnf(test2,axiom,(p(a)|p(f(X)))).";
+        System.out.println("c2: " + c2);
         
         Clause c3 = new Clause();
-        c3.parse(st);
+        c3.parse(lex);
         assert c3.toString().equals("cnf(test3,lemma,(p(a)|~p(f(X)))).") : 
             "Failure. " + c3.toString() + " not equal to cnf(test3,lemma,(p(a)|~p(f(X)))).";
-        System.out.println(c3);
+        System.out.println("c3: " + c3);
         
         Clause c4 = new Clause();
-        c4.parse(st);
+        c4.parse(lex);
         assert c4.toString().equals("cnf(taut,axiom,p(a)|q(a)|~p(a)).") : 
             "Failure. " + c4.toString() + " not equal to cnf(taut,axiom,p(a)|q(a)|~p(a)).";
-        System.out.println(c4);
+        System.out.println("c4: " + c4);
         
         Clause c5 = new Clause();
-        c5.parse(st);
+        c5.parse(lex);
         assert c5.toString().equals("cnf(dup,axiom,p(a)|q(a)|p(a)).") : 
             "Failure. " + c5.toString() + " not equal to cnf(dup,axiom,p(a)|q(a)|p(a)).";
-        System.out.println(c5);
+        System.out.println("c5: " + c5);
   
         Clause c6 = new Clause();
-        c6.parse(st);
+        c6.parse(lex);
         assert c6.toString().equals("cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).") : 
             "Failure. " + c6.toString() + " not equal to cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).";
-        System.out.println(c6);
+        System.out.println("c6: " + c6);
         }
         catch (ParseException p) {
             System.out.println(p.getMessage());

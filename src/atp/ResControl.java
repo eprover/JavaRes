@@ -90,15 +90,14 @@ public class ResControl {
             "cnf(c2, axiom, b|c).\n" +
             "cnf(c3, axiom, c).";
    
-        StreamTokenizer_s st = new StreamTokenizer_s(new StringReader(spec));
-        Term.setupStreamTokenizer(st);
+        Lexer lex = new Lexer(spec);
         try {
-            conj.parse(st);
-            cset.parse(st);
+            conj.parse(lex);
+            cset.parse(lex);
     
             String cstr = "cnf(ftest, axiom, p(X)|~q|p(a)|~q|p(Y)).";
-            st = new StreamTokenizer_s(new StringReader(cstr));
-            fclause.parse(st);
+            lex = new Lexer(cstr);
+            fclause.parse(lex);
         }
         catch (ParseException p) {
             System.out.println(p.getMessage());
