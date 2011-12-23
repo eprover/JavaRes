@@ -101,7 +101,7 @@ public class Formula {
         while (lex.type != Lexer.EOFToken) {
             try {
                 String id = lex.look();
-                System.out.println("INFO in Formula.parse(): id: " + lex.literal);
+                //System.out.println("INFO in Formula.parse(): id: " + lex.literal);
                 if (id.equals("include")) {
                     lex.next();
                     lex.next();
@@ -217,6 +217,9 @@ public class Formula {
     public static void main(String[] args) {
         
         //testWrappedFormula();
-        System.out.println(file2clauses(args[0]));
+        if (args.length < 1)
+            System.out.println("Error in main(), expected a filename");
+        else
+            System.out.println(file2clauses(args[0]));
     }
 }
