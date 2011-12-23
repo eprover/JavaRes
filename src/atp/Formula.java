@@ -35,6 +35,7 @@ public class Formula {
     public BareFormula form = null;
     public String type = "plain";
     public String name = "";
+    public static String defaultPath = "/home/apease/Programs/TPTP-v5.2.0";
 
     /** ***************************************************************
      * Return a string representation of the formula.
@@ -101,37 +102,39 @@ public class Formula {
         while (lex.type != Lexer.EOFToken) {
             try {
                 String id = lex.look();
-                //System.out.println("INFO in Formula.parse(): id: " + lex.literal);
+                //System.out.println("INFO in Formula.file2clauses(): id: " + lex.literal);
                 if (id.equals("include")) {
                     lex.next();
                     lex.next();
                     if (lex.type != Lexer.OpenPar)
-                        throw new ParseException("Error in Formula.parse(): expected '(', found " + lex.literal,0);
+                        throw new ParseException("Error in Formula.file2clauses(): expected '(', found " + lex.literal,0);
                     lex.next();
                     String name = lex.literal;
                     if (name.charAt(0) == '\'') {
-                        String filename = name.substring(1,name.length()-1);
+                        String filename = defaultPath + File.separator + name.substring(1,name.length()-1);
                         File f = new File(filename);
+                        System.out.println("INFO in Formula.file2clauses(): start reading file: " + filename);
                         Lexer lex2 = new Lexer(f);
                         cs.addAll(file2clauses(lex2));
+                        System.out.println("INFO in Formula.file2clauses(): completed reading file: " + filename);
                     }
                     lex.next();
-                    if (lex.literal != Lexer.ClosePar)
-                        throw new ParseException("Error in Formula.parse(): expected ')', found " + lex.literal,0);
+                    if (lex.type != Lexer.ClosePar)
+                        throw new ParseException("Error in Formula.file2clauses(): expected ')', found " + lex.literal,0);
                     lex.next();
-                    if (lex.literal != Lexer.FullStop)
-                        throw new ParseException("Error in Formula.parse(): expected '.', found " + lex.literal,0);
+                    if (lex.type != Lexer.FullStop)
+                        throw new ParseException("Error in Formula.file2clauses(): expected '.', found " + lex.literal,0);
                 }
                 if (id.equals("fof")) {
                     Formula f = Formula.parse(lex);
-                    System.out.println("INFO in Formula.parse(): fof: " + f);
+                    System.out.println("INFO in Formula.file2clauses(): fof: " + f);
                     if (f.form != null) 
                         cs.addAll(Clausifier.clausify(f.form));                    
                 }
                 if (id.equals("cnf")) {
                     Clause clause = new Clause();
                     clause = clause.parse(lex);
-                    System.out.println("INFO in Formula.parse(): cnf: " + clause);
+                    System.out.println("INFO in Formula.file2clauses(): cnf: " + clause);
                     cs.add(clause);
                 }
             }
