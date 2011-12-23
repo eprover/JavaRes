@@ -461,14 +461,17 @@ public class Clausifier {
      */
     private static BareFormula distributeAndOverOrRecurse(BareFormula form) {
     
-        //System.out.println("INFO in Clausifier.distributeAndOverOrRecurse(): " + form + " " + changed);
+        //System.out.println("INFO in Clausifier.distributeAndOverOrRecurse(): " + KIF.format(form.toKIFString()) + " " + changed);
         BareFormula result = form.deepCopy();
         if (form.child1 != null)
             result.child1 = distributeAndOverOr(form.child1);
         if (form.child2 != null)
             result.child2 = distributeAndOverOr(form.child2);
+        //System.out.println("INFO in Clausifier.distributeAndOverOrRecurse(): (2): " + KIF.format(form.toKIFString()));
         if (form.op.equals("|")) {
-            if (form.child1 != null && form.child1.op.equals("&")) {
+            //System.out.println("INFO in Clausifier.distributeAndOverOrRecurse(): top level or: " + KIF.format(form.toKIFString()));
+            if (result.child1 != null && result.child1.op.equals("&")) {
+                //System.out.println("INFO in Clausifier.distributeAndOverOrRecurse(): child1 and: " + KIF.format(form.toKIFString()));
                 BareFormula newParent = new BareFormula();
                 newParent.op = "&";
                 BareFormula newChild1 = new BareFormula();
@@ -494,9 +497,11 @@ public class Clausifier {
                 newParent.child1 = newChild1;
                 newParent.child2 = newChild2;
                 changed = true;
+                //System.out.println("INFO in Clausifier.distributeAndOverOrRecurse(): result: " + KIF.format(newParent.toKIFString()));
                 return newParent;
             }
-            else if (form.child2 != null && form.child2.op.equals("&")) {
+            else if (result.child2 != null && result.child2.op.equals("&")) {
+                //System.out.println("INFO in Clausifier.distributeAndOverOrRecurse(): child2 and: " + KIF.format(form.toKIFString()));
                 BareFormula newParent = new BareFormula();
                 newParent.op = "&";
                 BareFormula newChild1 = new BareFormula();
@@ -522,6 +527,7 @@ public class Clausifier {
                 newParent.child1 = newChild1;
                 newParent.child2 = newChild2;
                 changed = true;
+                //System.out.println("INFO in Clausifier.distributeAndOverOrRecurse(): result: " + KIF.format(newParent.toKIFString()));
                 return newParent;
             }   
         }
@@ -780,6 +786,7 @@ public class Clausifier {
         System.out.println();
         System.out.println("================== testDistribute ======================");
         BareFormula form = BareFormula.string2form("(a & b) | c");
+        /*
         System.out.println("input: " + form);
         form = distributeAndOverOr(form);
         System.out.println("result should be : (a | c) & (b | c)");
@@ -792,44 +799,70 @@ public class Clausifier {
         System.out.println("result should be : (a | c) & (a | d) & (b | c) & (d | b)");
         System.out.println("actual: " + form);
         System.out.println();
+        */        
+        KIF.init();
+        form = BareFormula.string2form("(((~holdsAt(VAR2, VAR1)|releasedAt(VAR2, plus(VAR1, n1)))|(happens(skf3, VAR1)&terminates(skf3, VAR2, VAR1)))|holdsAt(VAR2, plus(VAR1, n1)))");
+        System.out.println("input: " + form);
+        form = distributeAndOverOr(form);
+        System.out.println("actual: " + form);
+        System.out.println(KIF.format(form.toKIFString()));
+        System.out.println();
+    }
+    
+    /** ***************************************************************
+     */
+    private static void testClausificationSteps(String s) {
+        
+        KIF.init();
+        System.out.println();
+        System.out.println("================== testClausification ======================");
+        BareFormula form = BareFormula.string2form(s);
+        System.out.println("input: " + form);
+        System.out.println(KIF.format(form.toKIFString()));
+        System.out.println();
+        form =   removeImpEq(form);
+        System.out.println("after Remove Implications and Equivalence: " + form);
+        System.out.println(KIF.format(form.toKIFString()));
+        System.out.println();
+        form = moveNegationIn(form);
+        System.out.println("after Move Negation In: " + form);
+        System.out.println(KIF.format(form.toKIFString()));
+        System.out.println();
+        form = standardizeVariables(form);
+        System.out.println("after Standardize Variables: " + form);
+        System.out.println(KIF.format(form.toKIFString()));
+        System.out.println();
+        form = moveQuantifiersLeft(form);
+        System.out.println("after Move Quantifiers: " + form);
+        System.out.println(KIF.format(form.toKIFString()));
+        System.out.println();
+        form = skolemization(form);
+        System.out.println("after Skolemization: " + form);
+        System.out.println(KIF.format(form.toKIFString()));
+        System.out.println();
+        form = removeUQuant(form);
+        System.out.println("after remove universal quantifiers: " + form);
+        System.out.println(KIF.format(form.toKIFString()));
+        System.out.println();
+        form = distributeAndOverOr(form);
+        System.out.println("after Distribution: " + form);
+        System.out.println(KIF.format(form.toKIFString()));
+        System.out.println();
+        ArrayList<BareFormula> forms = separateConjunctions(form);
+        System.out.println("after separation: " + forms);
+        System.out.println(KIF.format(form.toKIFString()));
+        System.out.println();
+        ArrayList<Clause> clauses = flattenAll(forms);
+        System.out.println("after flattening: " + clauses);
+        System.out.println();
     }
     
     /** ***************************************************************
      */
     private static void testClausification() {
-        
-        System.out.println();
-        System.out.println("================== testClausification ======================");
-        BareFormula form = BareFormula.string2form("((((![X]:a(X))|b(X))|(?[X]:(?[Y]:p(X,f(Y)))))<=>q(g(a),X))");
-        System.out.println("input: " + form);
-        System.out.println();
-        form =   removeImpEq(form);
-        System.out.println("after Remove Implications and Equivalence: " + form);
-        System.out.println();
-        form = moveNegationIn(form);
-        System.out.println("after Move Negation In: " + form);
-        System.out.println();
-        form = standardizeVariables(form);
-        System.out.println("after Standardize Variables: " + form);
-        System.out.println();
-        form = moveQuantifiersLeft(form);
-        System.out.println("after Move Quantifiers: " + form);
-        System.out.println();
-        form = skolemization(form);
-        System.out.println("after Skolemization: " + form);
-        System.out.println();
-        form = removeUQuant(form);
-        System.out.println("after remove universal quantifiers: " + form);
-        System.out.println();
-        form = distributeAndOverOr(form);
-        System.out.println("after Distribution: " + form);
-        System.out.println();
-        ArrayList<BareFormula> forms = separateConjunctions(form);
-        System.out.println("after separation: " + forms);
-        System.out.println();
-        ArrayList<Clause> clauses = flattenAll(forms);
-        System.out.println("after flattening: " + clauses);
-        System.out.println();
+                
+        //testClausificationSteps("((((![X]:a(X))|b(X))|(?[X]:(?[Y]:p(X,f(Y)))))<=>q(g(a),X))");
+        testClausificationSteps("(![Fluent]:(![Time]:(((holdsAt(Fluent, Time)&(~releasedAt(Fluent, plus(Time, n1))))&(~(?[Event]:(happens(Event, Time)&terminates(Event, Fluent, Time)))))=>holdsAt(Fluent, plus(Time, n1)))))).");
     }
     
     /** ***************************************************************
@@ -843,7 +876,7 @@ public class Clausifier {
         System.out.println();
         ArrayList<Clause> result = clausify(form);
         for (int i = 0; i < result.size(); i++)
-            System.out.println(result.get(i));
+            System.out.println(result.get(i));        
     }
     
     /** ***************************************************************
@@ -856,6 +889,7 @@ public class Clausifier {
         //testStandardizeVariables();
         //testSkolemization();
         //testDistribute();
-        testClausificationSimple();
+        testClausification();
+        //testClausificationSimple();
     }
 }
