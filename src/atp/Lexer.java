@@ -40,6 +40,7 @@ public class Lexer {
        
     public static final String NoToken        = "No Token";
     public static final String WhiteSpace     = "White Space";
+    public static final String Newline        = "Newline";
     public static final String HashComment    = "HashComment";
     public static final String PerComment     = "PerComment";
     public static final String IdentUpper     = "Identifier starting with capital letter";
@@ -71,8 +72,9 @@ public class Lexer {
     public String filename = "";
     public String type = "";
     public String literal = "";
-    public String source = "";
-    public int pos = 0;
+    public String line = null;
+    public int pos = 0;  // character position on the current line
+    public LineNumberReader input = null;
     public ArrayDeque<String> tokenStack = new ArrayDeque<String>();
 
     /** This array contains all of the compiled Pattern objects that
@@ -92,15 +94,26 @@ public class Lexer {
     /** ***************************************************************
      */
     public Lexer(String s) {
+        
         init();
-        source = s;
+        //source = s;
+        input = new LineNumberReader(new StringReader(s));
     }
   
     /** ***************************************************************
      */
     public Lexer(File f) {
+        
         init();
-        source = file2string(f);
+        //source = file2string(f);
+        try {
+            input = new LineNumberReader(new FileReader(f));
+        }
+        catch (FileNotFoundException fnf) {
+            System.out.println("Error in Lexer(): File not found: " + f);
+            System.out.println(fnf.getMessage());
+            fnf.printStackTrace();
+        }
     }
     
     /** ***************************************************************
@@ -135,7 +148,8 @@ public class Lexer {
      */
     private int linepos() {
 
-        return source.substring(0,pos).split(" ").length + 1;
+        return input.getLineNumber();
+        //return source.substring(0,pos).split(" ").length + 1;
     }        
 
     /** ***************************************************************
@@ -162,6 +176,7 @@ public class Lexer {
         tokenDefs.put(Negation,    Pattern.compile("~"));                   
         tokenDefs.put(Universal,   Pattern.compile("!"));
         tokenDefs.put(Existential, Pattern.compile("\\?"));
+        tokenDefs.put(Newline,     Pattern.compile("\\n"));
         tokenDefs.put(WhiteSpace,  Pattern.compile("\\s+"));
         tokenDefs.put(IdentLower,  Pattern.compile("[a-z][_a-z0-9_A-Z]*"));
         tokenDefs.put(IdentUpper,  Pattern.compile("[_A-Z][_a-z0-9_A-Z]*"));
@@ -189,6 +204,7 @@ public class Lexer {
     public String look() throws ParseException {
 
         String res = next();
+        //System.out.println("INFO in Lexer.look(): " + res);
         tokenStack.push(res);
         return res;
     }
@@ -211,9 +227,12 @@ public class Lexer {
 
         look();
         for (int i = 0; i < tokens.size(); i++) {
-            if (type.equals(tokens.get(i)))
+            if (type.equals(tokens.get(i))) {
+                //System.out.println("INFO in Lexer.testTok(): found token");
                 return true;
+            }
         }
+        //System.out.println("INFO in Lexer.testTok(): didn't find tokens with type: " + type + " for list " + tokens);
         return false;
     }
 
@@ -350,8 +369,10 @@ public class Lexer {
     public String next() throws ParseException {
 
         String res = nextUnfiltered();
-        while ((type.equals(WhiteSpace) || type.equals(HashComment) || type.equals(PerComment)) && !res.equals(EOFToken))
+        while ((type.equals(WhiteSpace) || type.equals(HashComment) || 
+                type.equals(PerComment)) && !res.equals(EOFToken)) {
             res = nextUnfiltered();
+        }
         //System.out.println("INFO in next(): returning token: " + res);
         return res;
     }
@@ -364,20 +385,35 @@ public class Lexer {
         if (tokenStack.size() > 0)
             return tokenStack.pop();
         else {
-            if (source.length() <= pos) {
-                //System.out.println("INFO in Lexer.nextUnfiltered(): EOF");
-                type = EOFToken;
-                return EOFToken;
+            if (line == null || line.length() <= pos) {
+                try {
+                    do {
+                        line = input.readLine();
+                    } while (line != null && line.length() == 0);    
+                    //System.out.println("INFO in Lexer.nextUnfiltered(): " + line);
+                    pos = 0;
+                }
+                catch (IOException ioe) {
+                    System.out.println("Error in Lexer.nextUnfiltered()");
+                    System.out.println(ioe.getMessage());
+                    ioe.printStackTrace();
+                    return EOFToken;
+                }
+                if (line == null) {
+                    //System.out.println("INFO in Lexer.nextUnfiltered(): returning eof");
+                    type = EOFToken;
+                    return EOFToken;
+                }
             }
             Iterator<String> it = tokenDefs.keySet().iterator();
             while (it.hasNext()) {  // Go through all the token definitions and process the first one that matches
                 String key = it.next();
                 Pattern value = tokenDefs.get(key);
-                Matcher m = value.matcher(source.substring(pos));
+                Matcher m = value.matcher(line.substring(pos));
                 //System.out.println("INFO in Lexer.nextUnfiltered(): checking: " + key + " against: " + source.substring(pos));
                 if (m.lookingAt()) {
                     //System.out.println("INFO in Lexer.nextUnfiltered(): got token against source: " + source.substring(pos));
-                    literal = source.substring(pos + m.start(),pos + m.end());
+                    literal = line.substring(pos + m.start(),pos + m.end());
                     pos = pos + m.end();
                     type = key;
                     //System.out.println("INFO in Lexer.nextUnfiltered(): got token: " + literal + " type: " + type + 
@@ -385,13 +421,16 @@ public class Lexer {
                     return m.group();
                 }
             }
-            if (pos + 4 > source.length())
+            if (pos + 4 > line.length())
                 if (pos - 4 < 0)
-                    throw new ParseException("Error in Lexer.nextUnfiltered(): no matches in token list for " + source.substring(0,source.length()) + "... at pos " + pos,pos);
+                    throw new ParseException("Error in Lexer.nextUnfiltered(): no matches in token list for " + 
+                            line.substring(0,line.length()) + "... at line " + input.getLineNumber(),pos);
                 else
-                    throw new ParseException("Error in Lexer.nextUnfiltered(): no matches in token list for " + source.substring(pos - 4,source.length()) + "... at pos " + pos,pos);
+                    throw new ParseException("Error in Lexer.nextUnfiltered(): no matches in token list for " + 
+                            line.substring(pos - 4,line.length()) + "... at line " + input.getLineNumber(),pos);
             else
-                throw new ParseException("Error in Lexer.nextUnfiltered(): no matches in token list for " + source.substring(pos,pos+4) + "... at pos " + pos,pos);
+                throw new ParseException("Error in Lexer.nextUnfiltered(): no matches in token list for " + 
+                        line.substring(pos,pos+4) + "... at line " + input.getLineNumber(),pos);
         }
     }
 
@@ -402,8 +441,9 @@ public class Lexer {
 
         ArrayList<String> res = new ArrayList<String>();
         while (!testTok(EOFToken)) {
-            //System.out.println("INFO in Lexer.lex(): adding token: " + res);
-            res.add(next());
+            String tok = next();
+            //System.out.println("INFO in Lexer.lex(): " + tok);
+            res.add(tok);
         }
         return res;
     }
@@ -424,10 +464,8 @@ public class Lexer {
 
         System.out.println("-------------------------------------------------");
         System.out.println("INFO in Lexer.testLex()");
-        Lexer lex1 = new Lexer();
-        lex1.source = example1;
-        Lexer lex2 = new Lexer();
-        lex2.source = example2;
+        Lexer lex1 = new Lexer(example1);
+        Lexer lex2 = new Lexer(example2);
         try {
             ArrayList<String> res1 = lex1.lex();
             System.out.println("INFO in Lexer.testLex(): completed parsing example 1: " + example1);
@@ -447,8 +485,7 @@ public class Lexer {
 
         System.out.println("-------------------------------------------------");
         System.out.println("INFO in Lexer.testTerm()");
-        Lexer lex1 = new Lexer();
-        lex1.source = example1;
+        Lexer lex1 = new Lexer(example1);
         try {
             lex1.acceptTok(IdentLower); // f
             lex1.acceptTok(OpenPar);    // (
@@ -488,8 +525,7 @@ public class Lexer {
 
         System.out.println("-------------------------------------------------");
         System.out.println("INFO in Lexer.testClause()");
-        Lexer lex = new Lexer();
-        lex.source = example3;
+        Lexer lex = new Lexer(example3);
         try {
             ArrayList<String> toks = lex.lex();
             System.out.println(toks);
@@ -514,8 +550,7 @@ public class Lexer {
 
         System.out.println("-------------------------------------------------");
         System.out.println("INFO in Lexer.testFormula()");
-        Lexer lex = new Lexer();
-        lex.source = example5;
+        Lexer lex = new Lexer(example5);
         try {
             ArrayList<String> toks = lex.lex();
             System.out.println(toks);
@@ -539,8 +574,7 @@ public class Lexer {
 
         System.out.println("-------------------------------------------------");
         System.out.println("INFO in Lexer.testAcceptLit()");
-        Lexer lex = new Lexer();
-        lex.source = example3;
+        Lexer lex = new Lexer(example3);
         try {
             lex.acceptLit("cnf");
             lex.acceptLit("(");
@@ -573,8 +607,7 @@ public class Lexer {
         System.out.println("INFO in Lexer.testErrors(): Should throw three errors");
         Lexer lex = null;
         try {
-            lex = new Lexer();
-            lex.source = example4;
+            lex = new Lexer(example4);
             lex.look(); 
         }
         catch (Exception e) {
@@ -582,8 +615,7 @@ public class Lexer {
             e.printStackTrace();
         }
         try {
-            lex = new Lexer();
-            lex.source = example1;
+            lex = new Lexer(example1);
             lex.checkTok(EqualSign); 
         }
         catch (Exception e) {
@@ -591,8 +623,7 @@ public class Lexer {
             e.printStackTrace();
         }
         try {
-            lex = new Lexer();
-            lex.source = example1;
+            lex = new Lexer(example1);
             lex.checkLit("abc");
         }
         catch (Exception e) {
