@@ -174,7 +174,7 @@ public class Clause {
             //if (st.ttype == '%')
             //    return this;
             if (!lex.literal.equals("cnf"))
-                throw new Exception("\"cnf\" expected.");
+                throw new Exception("\"cnf\" expected.  Instead found '" + lex.literal + "' with clause so far " + this);
             lex.next(); 
             if (!lex.type.equals(Lexer.OpenPar))
                 throw new Exception("Open paren expected. Instead found '" + lex.literal + "' with clause so far " + this);
@@ -182,7 +182,7 @@ public class Clause {
             if (lex.type == Lexer.IdentLower)
                 name = lex.literal;
             else 
-                throw new Exception("Identifier expected.");
+                throw new Exception("Identifier expected.  Instead found '" + lex.literal + "' with clause so far " + this);
             lex.next(); 
             if (!lex.type.equals(Lexer.Comma))
                 throw new Exception("Comma expected. Instead found '" + lex.literal + "' with clause so far " + this);
@@ -193,7 +193,7 @@ public class Clause {
                 //   type = "plain";
             }
             else 
-                throw new Exception("Clause type enumeration expected.");
+                throw new Exception("Clause type enumeration expected.  Instead found '" + lex.literal + "' with clause so far " + this);
             lex.next(); 
             if (!lex.type.equals(Lexer.Comma))
                 throw new Exception("Comma expected. Instead found '" + lex.literal + "' with clause so far " + this);
