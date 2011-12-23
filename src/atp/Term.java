@@ -66,6 +66,27 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
     }
     
     /** ***************************************************************
+     */
+    public String toKIFString() {
+            
+        StringBuffer result = new StringBuffer();
+        if (subterms.size() > 0) 
+            result.append('(');
+        result.append(t);
+        if (subterms.size() > 0) {
+            result.append(" ");
+            for (int i = 0; i < subterms.size(); i++) {
+                result.append(subterms.get(i).toString());
+                if (i < subterms.size()-1)
+                    result.append(" ");
+            } 
+        }
+        if (subterms.size() > 0) 
+            result.append(')');
+        return result.toString();
+    }
+    
+    /** ***************************************************************
      * This routine sets up the StreamTokenizer_s so that it parses TPTP.
      */
     public static void setupStreamTokenizer(StreamTokenizer_s st) {
