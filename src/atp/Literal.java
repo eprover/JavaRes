@@ -54,6 +54,28 @@ public class Literal {
      
      /** ***************************************************************
       */
+     public String toKIFString() {
+             
+         StringBuffer result = new StringBuffer();
+         if (negated)
+             result.append("(not ");
+         if (!Term.emptyString(op)) {
+             if (op.equals("="))
+                 result.append("(equals " + lhs.toKIFString() + " " + rhs.toKIFString() + ")");
+             else if (op.equals("!="))
+                 result.append("(not (equals " + lhs.toKIFString() + " " + rhs.toKIFString() + "))");
+             else
+                 result.append(lhs);
+         }
+         else 
+             result.append(lhs.toKIFString());  
+         if (negated)
+             result.append(")");
+         return result.toString();
+     }
+     
+     /** ***************************************************************
+      */
      public boolean equals(Object l_obj) {
         
          assert !l_obj.getClass().getName().equals("Literal") : "Literal.equals() passed object not of type Literal"; 
