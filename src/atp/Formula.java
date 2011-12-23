@@ -102,7 +102,7 @@ public class Formula {
         while (lex.type != Lexer.EOFToken) {
             try {
                 String id = lex.look();
-                //System.out.println("INFO in Formula.file2clauses(): id: " + lex.literal);
+                //System.out.println("INFO in Formula.file2clauses(): id: " + lex.literal + " " + lex.type);
                 if (id.equals("include")) {
                     lex.next();
                     lex.next();
@@ -125,18 +125,23 @@ public class Formula {
                     if (lex.type != Lexer.FullStop)
                         throw new ParseException("Error in Formula.file2clauses(): expected '.', found " + lex.literal,0);
                 }
-                if (id.equals("fof")) {
+                else if (id.equals("fof")) {
                     Formula f = Formula.parse(lex);
                     System.out.println("INFO in Formula.file2clauses(): fof: " + f);
                     if (f.form != null) 
                         cs.addAll(Clausifier.clausify(f.form));                    
                 }
-                if (id.equals("cnf")) {
+                else if (id.equals("cnf")) {
                     Clause clause = new Clause();
                     clause = clause.parse(lex);
                     System.out.println("INFO in Formula.file2clauses(): cnf: " + clause);
                     cs.add(clause);
                 }
+                else if (lex.type == Lexer.EOFToken)
+                    return cs;
+                else
+                    throw new ParseException("Error in Formula.file2clauses: bad id: " + 
+                            id + " at line " + lex.input.getLineNumber(),0);
             }
             catch (ParseException p) {
                 System.out.println(p.getMessage());
