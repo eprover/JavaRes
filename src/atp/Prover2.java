@@ -204,8 +204,9 @@ public class Prover2 {
             fr = new FileReader(fin);
             if (fr != null) {
                 Lexer lex = new Lexer(fin);  
-                ClauseSet cs = new ClauseSet();
-                cs.parse(lex);                 
+                ClauseSet cs = Formula.file2clauses(lex);
+                //ClauseSet cs = new ClauseSet();
+                //cs.parse(lex);                 
                 for (int i = 0; i < evals.size(); i++) {
                     EvalStructure eval = evals.get(i);
                     if (opts.containsKey("allOpts")) {
@@ -280,8 +281,10 @@ public class Prover2 {
                 if (children != null) {
                     for (int i = 0; i < children.length; i++) {
                         String filename = opts.get("filename") + File.separator + children[i];
-                        if (filename.endsWith(".p")) 
-                            processTestFile(filename,opts,evals);                        
+                        if (filename.endsWith(".p")) {
+                            System.out.println("# testing file: " + filename);
+                            processTestFile(filename,opts,evals);
+                        }
                     }
                 }
             }
