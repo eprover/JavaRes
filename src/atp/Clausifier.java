@@ -35,9 +35,9 @@ public class Clausifier {
     private static BareFormula removeImp(BareFormula form) {
     
         BareFormula result = new BareFormula();
-        result.op = "|";
+        result.op = Lexer.Or;
         BareFormula newLHS = new BareFormula();
-        newLHS.op = "~";
+        newLHS.op = Lexer.Negation;
         if (form.child2 != null)
             result.child2 = removeImpEq(form.child2);
         if (form.child1 != null)
@@ -66,7 +66,7 @@ public class Clausifier {
             lhs.lit1 = form.lit1;
         if (form.lit2 != null)
             lhs.lit2 = form.lit2;
-        lhs.op = "->";
+        lhs.op = Lexer.Implies;
         BareFormula rhs = new BareFormula();
         if (form.child1 != null)
             rhs.child2 = form.child1;
@@ -76,8 +76,8 @@ public class Clausifier {
             rhs.lit2 = form.lit1;
         if (form.lit2 != null)
             rhs.lit1 = form.lit2;
-        rhs.op = "->";
-        result.op = "&";
+        rhs.op = Lexer.Implies;
+        result.op = Lexer.And;
         result.child1 = lhs;
         result.child2 = rhs;
         return removeImpEq(result);       
@@ -90,10 +90,10 @@ public class Clausifier {
      */
     private static BareFormula removeImpEq(BareFormula form) {
 
-        if (form.op.equals("->")) {         
+        if (form.op.equals(Lexer.Implies)) {         
             return removeImp(form);
         }
-        else if (form.op.equals("<=>")) {
+        else if (form.op.equals(Lexer.Equiv)) {
             return removeEq(form);
         }
         else {
@@ -120,10 +120,10 @@ public class Clausifier {
         if (!flip)
             return lit;
         Literal result = lit.deepCopy();
-        if (result.op.equals("=") && flip) 
-            result.op = "!=";        
-        else if (result.op.equals("!=") && flip) 
-            result.op = "=";     
+        if (result.op.equals(Lexer.EqualSign) && flip) 
+            result.op = Lexer.NotEqualSign;        
+        else if (result.op.equals(Lexer.NotEqualSign) && flip) 
+            result.op = Lexer.EqualSign;     
         else 
             result.negated = !result.negated;       
         return result;
@@ -615,7 +615,7 @@ public class Clausifier {
     
         System.out.println();
         System.out.println("================== testRemoveImpEq ======================");
-        BareFormula form = BareFormula.string2form("a->b");
+        BareFormula form = BareFormula.string2form("a=>b");
         System.out.println("input: " + form);
         form = removeImpEq(form);
         System.out.println(form);
