@@ -116,6 +116,37 @@ public class BareFormula {
     /** ***************************************************************
      * Return a string representation of the formula.
      */
+    public String toKIFString() {
+
+        String arg1 = null;
+        if (child1 != null)        
+            arg1 = child1.toKIFString();
+        if (lit1 != null)
+            arg1 = lit1.toKIFString();
+        String arg2 = null;
+        if (child2 != null)        
+            arg2 = child2.toKIFString();
+        if (lit2 != null)
+            arg2 = lit2.toKIFString();
+        
+        if (Term.emptyString(op))      
+            return arg1;        
+        if (op.equals(Lexer.Negation))      
+            return "(" + KIF.opMap.get(Lexer.Negation) + " " + arg1 + ")";        
+        if (logOp(op)) 
+            return "(" + KIF.opMap.get(op) + " " + arg1 + " " + arg2 + ")";        
+        else {
+            if (!op.equals("!") && !op.equals("?")) {
+                System.out.println("Error in BareFormula.toString(): bad operator: " + op);
+                return null;
+            }
+            return "(" + KIF.opMap.get(op) + " "  + "(" + arg1 + ") " + arg2 + ")"; 
+        }  
+    }
+        
+    /** ***************************************************************
+     * Return a string representation of the formula.
+     */
     public String toString() {
 
         String arg1 = null;
