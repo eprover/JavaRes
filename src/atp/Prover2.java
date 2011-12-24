@@ -60,9 +60,15 @@ public class Prover2 {
         " --allOpts\n" +
         "Run all options.  Ignore -tfb command line options and try in all combination.\n" +
         " --allStrat\n" +
+        "Print proofs. Dotgraph and proof options are mutually exclusive. \n" +
+        " --proof\n" +
+        "Print statistics.\n" +
+        " --stats\n" +
+        "Print statistics in comma delimited format.\n" +
+        " --csvstats\n" +
         "Run all clause selection strategies.\n" +
         " -d\n" +
-        "Generate proof output in dot-graph format\n";
+        "Generate proof output in dot-graph format. Dotgraph and proof options are mutually exclusive.\n";
 
     public static String errors = "";
     
@@ -80,6 +86,12 @@ public class Prover2 {
             if (arg.startsWith("--")) {
                 if (arg.equals("--allOpts"))
                     result.put("allOpts", "true");
+                if (arg.equals("--proof"))
+                    result.put("proof", "true");
+                if (arg.equals("--stats"))
+                    result.put("stats", "true");
+                if (arg.equals("--csvstats"))
+                    result.put("csvstats", "true");                  
                 if (arg.equals("--experiment"))
                     result.put("experiment", "true");
                 if (arg.equals("--allStrat"))
@@ -196,6 +208,42 @@ public class Prover2 {
     
     /** ***************************************************************
      */
+    private static void runExperiment(HashMap<String,String> opts, ArrayList<EvalStructure> evals) {
+        
+        ProofState.generateMatrixHeaderStatisticsString();
+        File dir = new File(opts.get("filename")); 
+        String[] children = dir.list();
+        if (children != null) {
+            for (int i = 0; i < children.length; i++) {
+                String filename = opts.get("filename") + File.separator + children[i];
+                if (filename.endsWith(".p")) {
+                    System.out.println("# testing file: " + filename);
+                    processTestFile(filename,opts,evals);
+                }
+            }
+        }
+    }
+    
+    /** ***************************************************************
+     */
+    private static void printStateResults(HashMap<String,String> opts, ProofState state) {
+        
+        boolean dotgraph = false;
+        if (opts.containsKey("stats"))
+            System.out.println(state.generateStatisticsString());
+        if (opts.containsKey("dotgraph"))
+            System.out.println(state.generateProof(state.res,true));
+        else if (opts.containsKey("proof"))
+            System.out.println(state.generateProof(state.res,false));
+        if (opts.containsKey("cvsstats"))
+            System.out.println(state.generateMatrixStatisticsString());
+    }
+    
+    /** ***************************************************************
+     * proof stats csvstats
+     * Process a particular problem file with the given list of subsumption
+     * options and clause evaluation strategies.
+     */
     private static ProofState processTestFile(String filename, HashMap<String,String> opts, ArrayList<EvalStructure> evals) {
         
         FileReader fr = null;
@@ -205,9 +253,7 @@ public class Prover2 {
             if (fr != null) {
                 Lexer lex = new Lexer(fin);  
                 lex.filename = filename;
-                ClauseSet cs = Formula.file2clauses(lex);
-                //ClauseSet cs = new ClauseSet();
-                //cs.parse(lex);                 
+                ClauseSet cs = Formula.file2clauses(lex);             
                 for (int i = 0; i < evals.size(); i++) {
                     EvalStructure eval = evals.get(i);
                     if (opts.containsKey("allOpts")) {
@@ -218,8 +264,10 @@ public class Prover2 {
                             state.filename = filename;
                             state.evalFunctionName = eval.name;                            
                             state.res = state.saturate(timeout);
-                            if (state.res != null)
-                                System.out.println(state.generateMatrixStatisticsString());
+                            if (state.res != null) {
+                                printStateResults(opts,state);
+                                return state;
+                            }
                         }
                     }
                     else {
@@ -227,8 +275,10 @@ public class Prover2 {
                         setStateOptions(state,opts);
                         int timeout = getTimeout(opts);
                         state.res = state.saturate(timeout);
-                        if (state.res != null)
+                        if (state.res != null) {
+                            printStateResults(opts,state);
                             return state;
+                        }
                     }
                 }
             }
@@ -273,31 +323,13 @@ public class Prover2 {
                 evals.add(ClauseEvaluationFunction.PickGiven5);
             }
             boolean dotgraph = false;
-            if (opts.containsKey("dotgraph"))
-                dotgraph = true;
-            if (opts.containsKey("experiment")) {
-                ProofState.generateMatrixHeaderStatisticsString();
-                File dir = new File(opts.get("filename")); 
-                String[] children = dir.list();
-                if (children != null) {
-                    for (int i = 0; i < children.length; i++) {
-                        String filename = opts.get("filename") + File.separator + children[i];
-                        if (filename.endsWith(".p")) {
-                            System.out.println("# testing file: " + filename);
-                            processTestFile(filename,opts,evals);
-                        }
-                    }
-                }
-            }
+
+            if (opts.containsKey("experiment")) 
+                runExperiment(opts,evals);            
             else {
-                evals = new ArrayList<EvalStructure>();
-                evals.add(ClauseEvaluationFunction.PickGiven5);
                 ProofState state = processTestFile(opts.get("filename"),opts,evals);
-                if (state != null) {
-                    System.out.println(state.generateStatisticsString());
-                    System.out.println("# SZS status Unsatisfiable");
-                    System.out.println(state.generateProof(state.res,dotgraph));
-                }
+                if (state != null) 
+                    printStateResults(opts, state);                
                 else
                     System.out.println("# SZS status Satisfiable");                    
             }                            
