@@ -204,6 +204,7 @@ public class Prover2 {
             fr = new FileReader(fin);
             if (fr != null) {
                 Lexer lex = new Lexer(fin);  
+                lex.filename = filename;
                 ClauseSet cs = Formula.file2clauses(lex);
                 //ClauseSet cs = new ClauseSet();
                 //cs.parse(lex);                 
