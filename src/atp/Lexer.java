@@ -183,7 +183,7 @@ public class Lexer {
         tokenDefs.put(IdentUpper,  Pattern.compile("[_A-Z][_a-z0-9_A-Z]*"));
         tokenDefs.put(DefFunctor,  Pattern.compile("\\$[_a-z0-9_A-Z]*"));
         tokenDefs.put(HashComment, Pattern.compile("#[^\\n]*"));
-        tokenDefs.put(PerComment,  Pattern.compile("%[^\\n]*"));
+        tokenDefs.put(PerComment,  Pattern.compile("\\%[^\\n]*"));
         tokenDefs.put(QuotedString,Pattern.compile("'[^']*'"));
         
         andOr.add(And);
