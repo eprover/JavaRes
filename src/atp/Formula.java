@@ -113,10 +113,10 @@ public class Formula {
                     if (name.charAt(0) == '\'') {
                         String filename = defaultPath + File.separator + name.substring(1,name.length()-1);
                         File f = new File(filename);
-                        System.out.println("INFO in Formula.file2clauses(): start reading file: " + filename);
+                        //System.out.println("INFO in Formula.file2clauses(): start reading file: " + filename);
                         Lexer lex2 = new Lexer(f);
                         cs.addAll(file2clauses(lex2));
-                        System.out.println("INFO in Formula.file2clauses(): completed reading file: " + filename);
+                        //System.out.println("INFO in Formula.file2clauses(): completed reading file: " + filename);
                     }
                     lex.next();
                     if (lex.type != Lexer.ClosePar)
@@ -127,14 +127,14 @@ public class Formula {
                 }
                 else if (id.equals("fof")) {
                     Formula f = Formula.parse(lex);
-                    System.out.println("INFO in Formula.file2clauses(): fof: " + f);
+                    //System.out.println("INFO in Formula.file2clauses(): fof: " + f);
                     if (f.form != null) 
                         cs.addAll(Clausifier.clausify(f.form));                    
                 }
                 else if (id.equals("cnf")) {
                     Clause clause = new Clause();
                     clause = clause.parse(lex);
-                    System.out.println("INFO in Formula.file2clauses(): cnf: " + clause);
+                    //System.out.println("INFO in Formula.file2clauses(): cnf: " + clause);
                     cs.add(clause);
                 }
                 else if (lex.type == Lexer.EOFToken)
