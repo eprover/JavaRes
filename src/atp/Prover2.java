@@ -228,19 +228,19 @@ public class Prover2 {
      */
     private static void printStateResults(HashMap<String,String> opts, ProofState state) {
         
+        //System.out.println("# print results");
         boolean dotgraph = false;
-        if (opts.containsKey("stats"))
-            System.out.println(state.generateStatisticsString());
         if (opts.containsKey("dotgraph"))
             System.out.println(state.generateProof(state.res,true));
         else if (opts.containsKey("proof"))
             System.out.println(state.generateProof(state.res,false));
-        if (opts.containsKey("cvsstats"))
+        else if (opts.containsKey("csvstats"))
             System.out.println(state.generateMatrixStatisticsString());
+        else  // (opts.containsKey("stats"))
+            System.out.println(state.generateStatisticsString());
     }
     
     /** ***************************************************************
-     * proof stats csvstats
      * Process a particular problem file with the given list of subsumption
      * options and clause evaluation strategies.
      */
@@ -253,6 +253,9 @@ public class Prover2 {
             if (fr != null) {
                 Lexer lex = new Lexer(fin);  
                 lex.filename = filename;
+                //System.out.println("# file: " + filename);
+                //System.out.println("# options: " + opts);
+                //System.out.println("# evals: " + evals);
                 ClauseSet cs = Formula.file2clauses(lex);             
                 for (int i = 0; i < evals.size(); i++) {
                     EvalStructure eval = evals.get(i);
@@ -264,21 +267,21 @@ public class Prover2 {
                             state.filename = filename;
                             state.evalFunctionName = eval.name;                            
                             state.res = state.saturate(timeout);
-                            if (state.res != null) {
-                                printStateResults(opts,state);
-                                return state;
-                            }
+                            if (state.res != null)
+                                printStateResults(opts,state);                           
                         }
                     }
                     else {
                         ProofState state = new ProofState(cs,evals.get(i)); 
                         setStateOptions(state,opts);
                         int timeout = getTimeout(opts);
+                        state.filename = filename;
+                        state.evalFunctionName = eval.name;  
                         state.res = state.saturate(timeout);
-                        if (state.res != null) {
-                            printStateResults(opts,state);
+                        if (state.res != null)
                             return state;
-                        }
+                        else
+                            return null;
                     }
                 }
             }
@@ -330,8 +333,8 @@ public class Prover2 {
                 ProofState state = processTestFile(opts.get("filename"),opts,evals);
                 if (state != null) 
                     printStateResults(opts, state);                
-                else
-                    System.out.println("# SZS status Satisfiable");                    
+                //else
+                    //System.out.println("# SZS status Satisfiable");                    
             }                            
         }
     }
