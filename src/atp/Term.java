@@ -22,6 +22,7 @@ package atp;
 
 import java.io.*;
 import java.util.*;
+import java.text.*;
 
 /** ***************************************************************
 A composite term f(t1, ..., tn) is represented by the list
@@ -151,8 +152,10 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
             //if (!lex.type.equals(Lexer.IdentLower) && !lex.type.equals(Lexer.IdentUpper))
                 //lex.next();
             //System.out.println("INFO in Term.parse(): after next token: " + lex.literal);
-            if (!lex.type.equals(Lexer.IdentLower) && !lex.type.equals(Lexer.IdentUpper))
-                throw new Exception("Expected a word."); 
+            if (!lex.type.equals(Lexer.IdentLower) && !lex.type.equals(Lexer.IdentUpper) &&
+                !lex.type.equals(Lexer.DefFunctor) && !lex.type.equals(Lexer.QuotedString))
+                throw new ParseException("Error in Term.parse(): Expected a word. Found " + 
+                        lex.literal + " " + lex.type,lex.input.getLineNumber()); 
             if (lex.type.equals(Lexer.IdentUpper)) {
                 t = lex.literal;
                 return this;
@@ -165,7 +168,8 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
                         lex.next();
                         parseTermList(lex); 
                         if (!lex.literal.equals(")"))
-                            throw new Exception("Close paren expected.");
+                            throw new ParseException("Error in Term.parse(): Close paren expected. Found " + 
+                                    lex.literal + " " + lex.type,lex.input.getLineNumber()); 
                         //System.out.println("INFO in Term.parse(): got close paren: " + lex.literal);
                         return this;
                     }
@@ -174,22 +178,25 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
                     }
                 }
                 else {
-                    if (lex.literal.equals("$false"))
+                    // if (lex.literal.equals("$false"))
+                    if (lex.type.equals(Lexer.DefFunctor) || lex.type.equals(Lexer.QuotedString))
                         t = lex.literal;
                     else
                         if (lex.type == Lexer.EOFToken)
                             return this;
                         else
-                            throw new Exception("Identifier " + lex.literal + " with type " + lex.type + 
-                                    " doesn't start with upper or lower case letter."); 
+                            throw new ParseException("Error in Term.parse(): Identifier " + lex.literal + " with type " + lex.type + 
+                                    " doesn't start with upper or lower case letter.",lex.input.getLineNumber()); 
                 }                  
             }                
         }
-        catch (Exception ex) {
+        catch (ParseException ex) {
             if (lex.literal == lex.EOFToken)
                 return this;
             System.out.println("Error in Term.parse(): " + ex.getMessage());
             System.out.println("Error in Term.parse(): word token:" + lex.literal); 
+            System.out.println("encountered at line: " + ex.getErrorOffset());
+            System.out.println("in file: " + lex.filename);
             ex.printStackTrace();
         }
         return this;
