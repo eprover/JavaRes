@@ -153,7 +153,8 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
                 //lex.next();
             //System.out.println("INFO in Term.parse(): after next token: " + lex.literal);
             if (!lex.type.equals(Lexer.IdentLower) && !lex.type.equals(Lexer.IdentUpper) &&
-                !lex.type.equals(Lexer.DefFunctor) && !lex.type.equals(Lexer.QuotedString))
+                !lex.type.equals(Lexer.DefFunctor) && !lex.type.equals(Lexer.QuotedString) &&
+                !lex.type.equals(Lexer.Number))
                 throw new ParseException("Error in Term.parse(): Expected a word. Found " + 
                         lex.literal + " " + lex.type,lex.input.getLineNumber()); 
             if (lex.type.equals(Lexer.IdentUpper)) {
@@ -179,7 +180,8 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
                 }
                 else {
                     // if (lex.literal.equals("$false"))
-                    if (lex.type.equals(Lexer.DefFunctor) || lex.type.equals(Lexer.QuotedString))
+                    if (lex.type.equals(Lexer.DefFunctor) || lex.type.equals(Lexer.QuotedString) || 
+                            lex.type.equals(Lexer.Number))
                         t = lex.literal;
                     else
                         if (lex.type == Lexer.EOFToken)

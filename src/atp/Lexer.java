@@ -46,7 +46,7 @@ public class Lexer {
     public static final String IdentUpper     = "Identifier starting with capital letter";
     public static final String IdentLower     = "Identifier starting with lower case letter";
     public static final String DefFunctor     = "Defined symbol (starting with a $)";
-    public static final String Integer        = "Positive or negative Integer";
+    public static final String Number         = "Positive or negative Integer or real";
     public static final String QuotedString   = "Quoted string";   
     public static final String FullStop       = ". (full stop)";
     public static final String OpenPar        = "(";
@@ -182,6 +182,7 @@ public class Lexer {
         tokenDefs.put(IdentLower,  Pattern.compile("[a-z][_a-z0-9_A-Z]*"));
         tokenDefs.put(IdentUpper,  Pattern.compile("[_A-Z][_a-z0-9_A-Z]*"));
         tokenDefs.put(DefFunctor,  Pattern.compile("\\$[_a-z0-9_A-Z]*"));
+        tokenDefs.put(Number,      Pattern.compile("-?[0-9]?[0-9\\.]+E?-?[0-9]*"));
         tokenDefs.put(HashComment, Pattern.compile("#[^\\n]*"));
         tokenDefs.put(PerComment,  Pattern.compile("\\%[^\\n]*"));
         tokenDefs.put(QuotedString,Pattern.compile("'[^']*'"));
