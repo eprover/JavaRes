@@ -55,6 +55,8 @@ public class Prover2 {
         " -b\n" +
         "--backward-subsumption\n" +
         "Discard processed clauses if they are subsumed by the given clause.\n" +
+        " -i\n" +
+        "File include path directive.\n" +
         " --experiment\n" +
         "Run an experiment to total times for all tests in a given directory.\n" +
         " --allOpts\n" +
@@ -131,6 +133,8 @@ public class Prover2 {
                         }
                         result.put("timeout",args[i+1]);
                     }
+                    if (arg.equals("-i"))                         
+                        Formula.includePath = args[i+1];                    
                 }
             }
             else

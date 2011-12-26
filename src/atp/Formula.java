@@ -35,7 +35,10 @@ public class Formula {
     public BareFormula form = null;
     public String type = "plain";
     public String name = "";
-    public static String defaultPath = "/home/apease/Programs/TPTP-v5.2.0";
+    
+    // TPTP file include paths
+    public static String includePath = null;  
+    public static String defaultPath = "/home/apease/Programs/TPTP-v5.3.0";
 
     /** ***************************************************************
      * Return a string representation of the formula.
@@ -99,8 +102,12 @@ public class Formula {
     public static ClauseSet file2clauses(Lexer lex) {
         
         ClauseSet cs = new ClauseSet();
+        System.out.println("# INFO in Formula.file2clauses(): reading file: " + lex.filename); 
+        System.out.print("#");  
         while (lex.type != Lexer.EOFToken) {
             try {
+                if (lex.input.getLineNumber() % 1000 == 0)
+                    System.out.print(".");
                 String id = lex.look();
                 //System.out.println("INFO in Formula.file2clauses(): id: " + lex.literal + " " + lex.type);
                 if (id.equals("include")) {
@@ -111,10 +118,16 @@ public class Formula {
                     lex.next();
                     String name = lex.literal;
                     if (name.charAt(0) == '\'') {
-                        String filename = defaultPath + File.separator + name.substring(1,name.length()-1);
+                        String filename = null;
+                        if (includePath == null)
+                            filename = defaultPath + File.separator + name.substring(1,name.length()-1);
+                        else
+                            filename = includePath + File.separator + name.substring(1,name.length()-1);
                         File f = new File(filename);
                         //System.out.println("INFO in Formula.file2clauses(): start reading file: " + filename);
                         Lexer lex2 = new Lexer(f);
+                        lex2.filename = filename;
+                        System.out.println();
                         cs.addAll(file2clauses(lex2));
                         //System.out.println("INFO in Formula.file2clauses(): completed reading file: " + filename);
                     }
@@ -137,23 +150,28 @@ public class Formula {
                     //System.out.println("INFO in Formula.file2clauses(): cnf: " + clause);
                     cs.add(clause);
                 }
-                else if (lex.type == Lexer.EOFToken)
+                else if (lex.type == Lexer.EOFToken) {
+                    System.out.println();
                     return cs;
+                }
                 else
                     throw new ParseException("Error in Formula.file2clauses: bad id: " + 
                             id + " at line " + lex.input.getLineNumber(),0);
             }
             catch (ParseException p) {
+                System.out.println();
                 System.out.println(p.getMessage());
                 p.printStackTrace();
                 return cs;
             }
             catch (IOException p) {
+                System.out.println();
                 System.out.println(p.getMessage());
                 p.printStackTrace();
                 return cs;
             }
         }
+        System.out.println();
         return cs;
     }
     
