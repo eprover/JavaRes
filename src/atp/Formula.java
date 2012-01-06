@@ -98,16 +98,24 @@ public class Formula {
     }
     
     /** ***************************************************************
+     * timeout if the total time to process the file exceeds a certain
+     * amount.  Typically, this is called with a timeout equal to the timeout
+     * for finding a refutation, so it should be more than adequate barring
+     * an unusual situation.
      */
-    public static ClauseSet file2clauses(Lexer lex) {
+    public static ClauseSet file2clauses(Lexer lex, int timeout) {
         
+        long t1 = System.currentTimeMillis();
         ClauseSet cs = new ClauseSet();
-        System.out.println("# INFO in Formula.file2clauses(): reading file: " + lex.filename); 
+        System.out.println("# INFO in Formula.file2clauses(): reading file: " + lex.filename +
+                " with read timeout: " + timeout); 
         System.out.print("#");  
         while (lex.type != Lexer.EOFToken) {
             try {
                 if (lex.input.getLineNumber() % 1000 == 0)
                     System.out.print(".");
+                if (((System.currentTimeMillis() - t1) / 1000.0) > timeout) 
+                    return null;
                 String id = lex.look();
                 //System.out.println("INFO in Formula.file2clauses(): id: " + lex.literal + " " + lex.type);
                 if (id.equals("include")) {
@@ -128,7 +136,11 @@ public class Formula {
                         Lexer lex2 = new Lexer(f);
                         lex2.filename = filename;
                         System.out.println();
-                        cs.addAll(file2clauses(lex2));
+                        ClauseSet newcs = file2clauses(lex2,timeout);
+                        if (newcs != null)
+                            cs.addAll(newcs);
+                        else
+                            return null;
                         //System.out.println("INFO in Formula.file2clauses(): completed reading file: " + filename);
                     }
                     lex.next();
@@ -177,7 +189,13 @@ public class Formula {
     
     /** ***************************************************************
      */
-    private static ClauseSet file2clauses(String filename) {
+    public static ClauseSet file2clauses(Lexer lex) {
+        return file2clauses(lex,10000);
+    }
+          
+    /** ***************************************************************
+     */
+    private static ClauseSet file2clauses(String filename, int timeout) {
         
         FileReader fr = null;
         try {
@@ -201,6 +219,12 @@ public class Formula {
             }
         }  
         return null;
+    }
+    
+    /** ***************************************************************
+     */
+    private static ClauseSet file2clauses(String filename) {
+        return file2clauses(filename,10000);
     }
     
     /** ***************************************************************
