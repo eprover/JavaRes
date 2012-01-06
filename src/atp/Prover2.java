@@ -257,35 +257,37 @@ public class Prover2 {
             if (fr != null) {
                 Lexer lex = new Lexer(fin);  
                 lex.filename = filename;
+                int timeout = getTimeout(opts);
                 //System.out.println("# file: " + filename);
                 //System.out.println("# options: " + opts);
                 //System.out.println("# evals: " + evals);
-                ClauseSet cs = Formula.file2clauses(lex);             
-                for (int i = 0; i < evals.size(); i++) {
-                    EvalStructure eval = evals.get(i);
-                    if (opts.containsKey("allOpts")) {
-                        ArrayList<ProofState> states = setAllStateOptions(cs,evals.get(i));
-                        for (int j = 0; j < states.size(); j++) {
-                            ProofState state = states.get(j);
-                            int timeout = getTimeout(opts);
+                ClauseSet cs = Formula.file2clauses(lex,timeout);    
+                if (cs != null) {
+                    for (int i = 0; i < evals.size(); i++) {
+                        EvalStructure eval = evals.get(i);
+                        if (opts.containsKey("allOpts")) {
+                            ArrayList<ProofState> states = setAllStateOptions(cs,evals.get(i));
+                            for (int j = 0; j < states.size(); j++) {
+                                ProofState state = states.get(j);
+                                
+                                state.filename = filename;
+                                state.evalFunctionName = eval.name;                            
+                                state.res = state.saturate(timeout);
+                                if (state.res != null)
+                                    printStateResults(opts,state);                           
+                            }
+                        }
+                        else {
+                            ProofState state = new ProofState(cs,evals.get(i)); 
+                            setStateOptions(state,opts);
                             state.filename = filename;
-                            state.evalFunctionName = eval.name;                            
+                            state.evalFunctionName = eval.name;  
                             state.res = state.saturate(timeout);
                             if (state.res != null)
-                                printStateResults(opts,state);                           
+                                return state;
+                            else
+                                return null;
                         }
-                    }
-                    else {
-                        ProofState state = new ProofState(cs,evals.get(i)); 
-                        setStateOptions(state,opts);
-                        int timeout = getTimeout(opts);
-                        state.filename = filename;
-                        state.evalFunctionName = eval.name;  
-                        state.res = state.saturate(timeout);
-                        if (state.res != null)
-                            return state;
-                        else
-                            return null;
                     }
                 }
             }
