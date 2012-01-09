@@ -70,6 +70,8 @@ public class HeuristicClauseSet extends ClauseSet {
             int besteval = c.evaluation.get(heuristic_index);
             for (int i = 1; i < clauses.size(); i++) {
                 c = clauses.get(i);
+                if (c.evaluation == null)
+                    System.out.println("Error in HeuristicClauseSet.extractBestByEval(): no eval for clause: " + c);
                 if (c.evaluation.get(heuristic_index) < besteval) {
                     //System.out.println("INFO in HeuristicClauseSet.extractBestByEval(): heuristic: " + i);
                     besteval = clauses.get(i).evaluation.get(heuristic_index);
