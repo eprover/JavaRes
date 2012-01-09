@@ -21,17 +21,17 @@ MA  02111-1307 USA
 
 import java.io.*;
 import java.util.*;
+import java.text.*;
 
 public class Prover2 {
     
-    private static String doc = "prover.py 0.1\n" + 
+    private static String doc = "Prover2.java 0.2\n" + 
         "\n" + 
-        "Usage: prover.py [options] <problem_file>\n" + 
+        "Usage: atp.Prover2 [options] <problem_file>\n" + 
         "\n" + 
         "This is a straightforward implementation of a simple resolution-based\n" + 
         "prover for first-order clausal logic. Problem file should be in\n" + 
-        "(restricted) TPTP-3 CNF syntax. Unsupported features include single-\n" + 
-        "and double quoted strings and includes. Equality is parsed, but not\n" + 
+        "(restricted) TPTP-3 CNF or FOF syntax. Equality is parsed, but not\n" + 
         "interpreted so far.\n" + 
         "\n" + 
         "Options:\n" + 
@@ -58,19 +58,21 @@ public class Prover2 {
         " -i\n" +
         "File include path directive.\n" +
         " --experiment\n" +
-        "Run an experiment to total times for all tests in a given directory.\n" +
+        "Run an experiment to total times for all tests in a given directory (deprecated, use script instead).\n" +
         " --allOpts\n" +
         "Run all options.  Ignore -tfb command line options and try in all combination.\n" +
         " --allStrat\n" +
-        "Print proofs. Dotgraph and proof options are mutually exclusive. \n" +
-        " --proof\n" +
-        "Print statistics.\n" +
-        " --stats\n" +
-        "Print statistics in comma delimited format.\n" +
-        " --csvstats\n" +
         "Run all clause selection strategies.\n" +
+        " --proof\n" +
+        "Print proofs. Dotgraph and proof options are mutually exclusive. \n" +
+        " --stats\n" +
+        "Print statistics.\n" +
+        " --csvstats\n" +
+        "Print statistics in comma delimited format.\n" +
         " -d\n" +
-        "Generate proof output in dot-graph format. Dotgraph and proof options are mutually exclusive.\n";
+        "Generate proof output in dot-graph format. Dotgraph and proof options are mutually exclusive.\n" +
+        " -c\n" +
+        "not yet implemented - command line interactive mode.  Run query on file and keep loaded after result. Short timeout recommended.";
 
     public static String errors = "";
     
@@ -124,6 +126,8 @@ public class Prover2 {
                         result.put("backward_subsumption","true");
                     if (arg.charAt(j) == 'd')
                         result.put("dotgraph","true");
+                    if (arg.charAt(j) == 'c')
+                        result.put("interactive","true");
                     if (arg.equals("-to")) {
                         try {
                              int val = Integer.parseInt(args[i+1]);
@@ -248,6 +252,91 @@ public class Prover2 {
      * Process a particular problem file with the given list of subsumption
      * options and clause evaluation strategies.
      */
+    private static void runInteractive(HashMap<String,String> opts, ArrayList<EvalStructure> evals) {
+        
+        if (evals == null || evals.size() < 1) {
+            System.out.println("Error in Prover2.runInteractive(): no evaluation functions");
+            return;
+        }
+        if (evals.size() > 1) 
+            System.out.println("Warning in Prover2.runInteractive(): more than one evaluation function, using first only.");        
+        String command = "";
+        System.out.println("Enter a TPTP query or statement, or '$exit' to quit.");
+        System.out.println("Enter $query for query mode or $assert to add assertions.");
+        System.out.println("Starting in query mode.");
+        String filename = opts.get("filename");
+        boolean assertMode = false; // interpret all formulas as queries
+        FileReader fr = null;
+        try {
+            File fin = new File(filename);
+            fr = new FileReader(fin);
+            if (fr != null) {
+                Lexer lex = new Lexer(fin);  
+                lex.filename = filename;
+                int timeout = getTimeout(opts);
+                ClauseSet cs = Formula.file2clauses(lex,timeout);  
+                //System.out.println(cs);
+                if (cs != null) {
+                    while (!command.startsWith("$exit")) {
+                        System.out.print("TPTP> ");
+                        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+                        try {
+                           command = br.readLine();
+                        } catch (IOException ioe) {
+                           System.out.println("IO error trying to read query");
+                           return;
+                        }
+                        if (!command.startsWith("$")) {
+                            Lexer lex2 = new Lexer(command);
+                            String id = lex2.look();
+                            if (assertMode) {
+                                ClauseSet csnew = Formula.command2clauses(id, lex2, timeout);
+                                if (csnew != null)
+                                    cs.addAll(csnew);
+                            }
+                            else {               
+                                cs.addAll(Formula.command2clauses(id, lex2, timeout));
+                                ProofState state = new ProofState(cs,evals.get(0));
+                                setStateOptions(state,opts);
+                                state.filename = filename;
+                                state.evalFunctionName = evals.get(0).name;  
+                                state.res = state.saturate(timeout);
+                                if (state.res != null)
+                                    printStateResults(opts,state);
+                                else
+                                    System.out.println("# SZS Satisfiable");
+                            }
+                        }
+                        else if (command.equals("$assert"))
+                            assertMode = true;
+                        else if (command.equals("$query"))
+                            assertMode = false;
+                    }
+                }
+            }
+        }
+        catch (IOException e) {
+            System.out.println("Error in Prover2.runInteractive(): File error reading " + filename + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+        catch (ParseException pe) {
+            System.out.println("Error in Prover2.runInteractive(): Parse error reading command " + command + ": " + pe.getMessage());
+            pe.printStackTrace();
+        }
+        finally {
+            try {
+                if (fr != null) fr.close();
+            }
+            catch (Exception e) {
+                System.out.println("Exception in Prover2.runInteractive()" + e.getMessage());
+            }
+        }  
+    }
+    
+    /** ***************************************************************
+     * Process a particular problem file with the given list of subsumption
+     * options and clause evaluation strategies.
+     */
     private static ProofState processTestFile(String filename, HashMap<String,String> opts, ArrayList<EvalStructure> evals) {
         
         FileReader fr = null;
@@ -334,7 +423,9 @@ public class Prover2 {
             boolean dotgraph = false;
 
             if (opts.containsKey("experiment")) 
-                runExperiment(opts,evals);            
+                runExperiment(opts,evals);
+            else if (opts.containsKey("interactive"))
+                runInteractive(opts,evals);
             else {
                 ProofState state = processTestFile(opts.get("filename"),opts,evals);
                 if (state != null) 
