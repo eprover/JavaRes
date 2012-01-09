@@ -81,7 +81,7 @@ public class ProofState {
         unprocessed = new HeuristicClauseSet(clauses, efunctions);                                         
         processed   = new ClauseSet();
         for (Clause c:clauses.clauses) 
-            unprocessed.addClause(c);
+            unprocessed.addClause(c.deepCopy());
         initial_clause_count = unprocessed.length();
         proc_clause_count    = 0;
         factor_count         = 0;
@@ -98,6 +98,7 @@ public class ProofState {
         
         return generateStatisticsString();
     }
+    
     /** ***************************************************************
      */  
     public String toStringOpts() {
@@ -262,6 +263,7 @@ public class ProofState {
         sb.append(time);
         return sb.toString();
     }
+    
     /** ***************************************************************
      * Get all clauses used in the proof
      */  
@@ -347,7 +349,7 @@ public class ProofState {
         while (it.hasNext()) {
             String key = it.next();
             Clause c = clauseMap.get(key);
-            System.out.println("INFO in ProofState.createGraph(): " + c.toString());
+            // System.out.println("INFO in ProofState.createGraph(): " + c.toString());
             for (int i = 0; i < c.support.size(); i++) {   // get backpointers from c
                 String nodeStr = c.support.get(i);         // nodeStr points from c
                 GraphNode node = null;                     // node is the source of a pointer to c
