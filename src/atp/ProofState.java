@@ -377,7 +377,7 @@ public class ProofState {
                 }
                 if (Term.emptyString(node2.clause))
                     node2.clause = c.toString(true);
-                System.out.println("INFO in ProofState.createGraph() 2 : " + c.toString());
+                //System.out.println("INFO in ProofState.createGraph() 2 : " + c.toString());
                 node2.pointersFromNodes.add(nodeStr); 
             }
         }
