@@ -96,6 +96,72 @@ public class Formula {
         f.type = type;
         return f;
     }
+
+    /** ***************************************************************
+     * timeout if the total time to process exceeds a certain
+     * amount.  Typically, this is called with a timeout equal to the timeout
+     * for finding a refutation, so it should be more than adequate barring
+     * an unusual situation.
+     */
+    public static ClauseSet command2clauses(String id, Lexer lex, int timeout) throws ParseException, IOException {
+
+        ClauseSet cs = new ClauseSet();
+        if (id.equals("include")) {
+            lex.next();
+            lex.next();
+            if (lex.type != Lexer.OpenPar)
+                throw new ParseException("Error in Formula.file2clauses(): expected '(', found " + lex.literal,0);
+            lex.next();
+            String name = lex.literal;
+            if (name.charAt(0) == '\'') {
+                String filename = null;
+                if (includePath == null)
+                    filename = defaultPath + File.separator + name.substring(1,name.length()-1);
+                else
+                    filename = includePath + File.separator + name.substring(1,name.length()-1);
+                File f = new File(filename);
+                //System.out.println("INFO in Formula.file2clauses(): start reading file: " + filename);
+                Lexer lex2 = new Lexer(f);
+                lex2.filename = filename;
+                System.out.println();
+                ClauseSet newcs = file2clauses(lex2,timeout);
+                if (newcs != null)
+                    return newcs;
+                else
+                    return null;
+                //System.out.println("INFO in Formula.file2clauses(): completed reading file: " + filename);
+            }
+            lex.next();
+            if (lex.type != Lexer.ClosePar)
+                throw new ParseException("Error in Formula.command2clauses(): expected ')', found " + lex.literal,0);
+            lex.next();
+            if (lex.type != Lexer.FullStop)
+                throw new ParseException("Error in Formula.command2clauses(): expected '.', found " + lex.literal,0);
+        }
+        else if (id.equals("fof")) {
+            Formula f = Formula.parse(lex);
+            //System.out.println("INFO in Formula.file2clauses(): fof: " + f);
+            if (f.form != null) {
+                cs.addAll(Clausifier.clausify(f.form));
+                return cs;
+            }
+        }
+        else if (id.equals("cnf")) {
+            Clause clause = new Clause();
+            clause = clause.parse(lex);
+            //System.out.println("INFO in Formula.file2clauses(): cnf: " + clause);
+            cs.add(clause);
+            return cs; 
+        }
+        else if (lex.type == Lexer.EOFToken) {
+            System.out.println();
+            return cs;
+        }
+        else
+            throw new ParseException("Error in Formula.command2clauses: bad id: " + 
+                    id + " at line " + lex.input.getLineNumber(),0);
+        return cs;
+    }
     
     /** ***************************************************************
      * timeout if the total time to process the file exceeds a certain
@@ -107,8 +173,8 @@ public class Formula {
         
         long t1 = System.currentTimeMillis();
         ClauseSet cs = new ClauseSet();
-        System.out.println("# INFO in Formula.file2clauses(): reading file: " + lex.filename +
-                " with read timeout: " + timeout); 
+        //System.out.println("# INFO in Formula.file2clauses(): reading file: " + lex.filename +
+        //        " with read timeout: " + timeout); 
         System.out.print("#");  
         while (lex.type != Lexer.EOFToken) {
             try {
@@ -117,58 +183,7 @@ public class Formula {
                 if (((System.currentTimeMillis() - t1) / 1000.0) > timeout) 
                     return null;
                 String id = lex.look();
-                //System.out.println("INFO in Formula.file2clauses(): id: " + lex.literal + " " + lex.type);
-                if (id.equals("include")) {
-                    lex.next();
-                    lex.next();
-                    if (lex.type != Lexer.OpenPar)
-                        throw new ParseException("Error in Formula.file2clauses(): expected '(', found " + lex.literal,0);
-                    lex.next();
-                    String name = lex.literal;
-                    if (name.charAt(0) == '\'') {
-                        String filename = null;
-                        if (includePath == null)
-                            filename = defaultPath + File.separator + name.substring(1,name.length()-1);
-                        else
-                            filename = includePath + File.separator + name.substring(1,name.length()-1);
-                        File f = new File(filename);
-                        //System.out.println("INFO in Formula.file2clauses(): start reading file: " + filename);
-                        Lexer lex2 = new Lexer(f);
-                        lex2.filename = filename;
-                        System.out.println();
-                        ClauseSet newcs = file2clauses(lex2,timeout);
-                        if (newcs != null)
-                            cs.addAll(newcs);
-                        else
-                            return null;
-                        //System.out.println("INFO in Formula.file2clauses(): completed reading file: " + filename);
-                    }
-                    lex.next();
-                    if (lex.type != Lexer.ClosePar)
-                        throw new ParseException("Error in Formula.file2clauses(): expected ')', found " + lex.literal,0);
-                    lex.next();
-                    if (lex.type != Lexer.FullStop)
-                        throw new ParseException("Error in Formula.file2clauses(): expected '.', found " + lex.literal,0);
-                }
-                else if (id.equals("fof")) {
-                    Formula f = Formula.parse(lex);
-                    //System.out.println("INFO in Formula.file2clauses(): fof: " + f);
-                    if (f.form != null) 
-                        cs.addAll(Clausifier.clausify(f.form));                    
-                }
-                else if (id.equals("cnf")) {
-                    Clause clause = new Clause();
-                    clause = clause.parse(lex);
-                    //System.out.println("INFO in Formula.file2clauses(): cnf: " + clause);
-                    cs.add(clause);
-                }
-                else if (lex.type == Lexer.EOFToken) {
-                    System.out.println();
-                    return cs;
-                }
-                else
-                    throw new ParseException("Error in Formula.file2clauses: bad id: " + 
-                            id + " at line " + lex.input.getLineNumber(),0);
+                cs.addAll(command2clauses(id,lex,timeout));
             }
             catch (ParseException p) {
                 System.out.println();
