@@ -102,7 +102,18 @@ public class ClauseSet {
        else
            return null;
    }
-
+   
+   /** ***************************************************************
+    * Return a copy of the instance.
+    */                            
+   public ClauseSet deepCopy() {
+       
+       ClauseSet newcs = new ClauseSet();
+       for (int i = 0; i < clauses.size(); i++)
+           newcs.add(clauses.get(i).deepCopy());
+      return newcs;
+   }
+   
     /** ***************************************************************
      * Return a list of tuples (clause, literal-index) such that the
      * set includes at least all literals that can potentially be
