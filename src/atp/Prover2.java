@@ -295,8 +295,9 @@ public class Prover2 {
                                     cs.addAll(csnew);
                             }
                             else {               
-                                cs.addAll(Formula.command2clauses(id, lex2, timeout));
-                                ProofState state = new ProofState(cs,evals.get(0));
+                                ClauseSet csnew = cs.deepCopy();  // don't add query to the knowledge base
+                                csnew.addAll(Formula.command2clauses(id, lex2, timeout));
+                                ProofState state = new ProofState(csnew,evals.get(0));
                                 setStateOptions(state,opts);
                                 state.filename = filename;
                                 state.evalFunctionName = evals.get(0).name;  
