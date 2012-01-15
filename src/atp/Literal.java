@@ -170,11 +170,10 @@ public class Literal {
      /** ***************************************************************
       * Return a copy of self, instantiated with the given substitution.
       */
-     public Literal instantiate(Substitutions subst) {
+     public Literal substitute(Substitutions subst) {
 
          //System.out.println("INFO in Literal.instantiate(): "  + this + " " + subst);
-         Literal newLit = new Literal();
-         newLit.negated = negated;
+         Literal newLit = deepCopy();
          newLit.lhs = subst.apply(lhs);
          if (!Term.emptyString(op))
              newLit.rhs = subst.apply(rhs); 
