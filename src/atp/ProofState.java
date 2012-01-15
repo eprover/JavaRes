@@ -462,20 +462,127 @@ public class ProofState {
      * Rename the clauses (including the "support" list in each clause).
      */  
     public TreeMap<String,Clause> renumber(HashMap<String,Clause> clauseMap, HashMap<String,String> nameMap) {
-    
+
+        //System.out.println("\nINFO in ProofState.renumber() clauseMap: " + clauseMap);
+        //System.out.println("\nINFO in ProofState.renumber() nameMap: " + nameMap);
         TreeMap<String,Clause> proof = new TreeMap<String,Clause>();        
         Iterator<String> it = clauseMap.keySet().iterator();
         while (it.hasNext()) {
             String key = it.next();
             Clause c = clauseMap.get(key);               
             c.name = nameMap.get(c.name);
-            for (int i = 0; i < c.support.size(); i++) {             
-                String pointer = nameMap.get(c.support.get(i));
-                c.support.set(i,pointer);
+            if (c.name != null) {
+                for (int i = 0; i < c.support.size(); i++) {             
+                    String pointer = nameMap.get(c.support.get(i));
+                    c.support.set(i,pointer);
+                }
+                //System.out.println("\nINFO in ProofState.renumber(): " + c);
+                proof.put(c.name,c);
             }
-            proof.put(c.name,c);
         }
         return proof;
+    }
+ 
+    /** ***************************************************************
+     */  
+    public ArrayList<Term> extractAnswerRecurse(TreeMap<String,Clause> proof, String id, ArrayList<Term> vars) {
+        
+        //System.out.println("INFO in ProofState.extractAnswerRecurse(): checking: " + id);
+        ArrayList<Term> newvars = new ArrayList<Term>();
+        newvars.addAll(vars);
+        Clause c = proof.get(id);
+        newvars = c.subst.applyList(newvars);
+        Iterator<String> it = proof.keySet().iterator();
+        while (it.hasNext()) {
+            String key = it.next();
+            Clause val = proof.get(key);
+            for (int i = 0; i < val.support.size(); i++) {
+                if (val.support.get(i).equals(id))
+                    newvars = extractAnswerRecurse(proof,val.name,newvars);
+            }
+        }       
+        return newvars; 
+    }
+    
+    /** ***************************************************************
+     * Extract an answer binding for each unbound variable in a 
+     * negated conjecture.
+     */  
+    public String extractAnswer(TreeMap<String,Clause> proof, Clause conjecture) {
+        
+        //System.out.println("INFO in ProofState.extractAnswer(): conjecture: " + conjecture);
+        Clause conjectureNorm = conjecture.normalizeVarCopy();
+        //System.out.println("INFO in ProofState.extractAnswer(): conjectureNorm: " + conjectureNorm);
+        StringBuffer sb = new StringBuffer();
+        ArrayList<Term> vars = conjecture.collectVars();
+        Iterator<String> it = proof.keySet().iterator();
+        String conjectKey = "";
+        Clause conjectValue = null;
+        while (it.hasNext()) {  // find conjecture in proofs
+            String key = it.next();
+            Clause c = proof.get(key);
+            if (c.normalizeVarCopy().equals(conjectureNorm)) {
+                conjectKey = key;
+                conjectValue = c;
+            }
+        }
+        if (conjectValue == null) {
+            System.out.println("Error in ProofState.extractAnswer(): conjecture: " + conjecture + " not found.");
+            return null;
+        }
+        ArrayList<Term> map = extractAnswerRecurse(proof,conjectKey,vars);
+        sb.append(map.toString());
+        return sb.toString();
+    }
+    
+    /** ***************************************************************
+     * @param clauseMap is an output variable
+     * @param graph is an output variable
+     */  
+    public void generateProofGraph(Clause res, HashMap<String,Clause> clauseMap, 
+            HashMap<String,GraphNode> graph) {
+
+        for (int i = 0; i < processed.length(); i++) {
+            Clause c = processed.get(i);
+            clauseMap.put(c.name, c);
+        }
+        clauseMap.putAll(searchProof(clauseMap,res));    // get just the clauses in the proof    
+        graph.putAll(createGraph(clauseMap));            // turn into a graph with pointers and backpointers
+    }
+
+    /** ***************************************************************
+     */  
+    public TreeMap<String,Clause> generateProofTree(Clause res) {
+    
+        HashMap<String,Clause> clauseMap = new HashMap<String,Clause>();   
+        HashMap<String,GraphNode> graph = new HashMap<String,GraphNode>();
+        generateProofGraph(res,clauseMap,graph);
+        //System.out.println("INFO in ProofState.generateProofTree() graph: " + graph);
+        //System.out.println("\nINFO in ProofState.generateProofTree() clauseMap: " + clauseMap);
+        //System.out.println("\nINFO in ProofState.generateProofTree() processed: " + processed);
+        LinkedList<GraphNode> beginners = getBeginners(graph);      // get all clauses from KB and conjecture
+        //System.out.println("\nINFO in ProofState.generateProofTree() beginners: " + beginners);
+        HashMap<String,String> nameMap = toposort(graph, beginners);
+        //System.out.println("\nINFO in ProofState.generateProofTree() nameMap: " + nameMap);
+        TreeMap<String,Clause> proof = renumber(clauseMap,nameMap);
+        return proof;
+    }
+    
+    /** ***************************************************************
+     */  
+    public String generateStringProof(Clause res) {
+    
+        return proof2String(generateProofTree(res));
+    }
+
+    /** ***************************************************************
+     */  
+    public String generateDotGraphProof(Clause res) {
+    
+        HashMap<String,Clause> clauseMap = new HashMap<String,Clause>();   
+        HashMap<String,GraphNode> graph = new HashMap<String,GraphNode>();
+        generateProofGraph(res,clauseMap,graph);
+        return dotGraph(graph);
     }
     
     /** ***************************************************************
@@ -484,23 +591,12 @@ public class ProofState {
      */  
     public String generateProof(Clause res, boolean dotgraph) {
 
-        HashMap<String,Clause> clauseMap = new HashMap<String,Clause>();
-        for (int i = 0; i < processed.length(); i++) {
-            Clause c = processed.get(i);
-            clauseMap.put(c.name, c);
-        }
-        clauseMap = searchProof(clauseMap,res);                     // get just the clauses in the proof    
-        HashMap<String,GraphNode> graph = createGraph(clauseMap);   // turn into a graph with points and backpointers
         if (dotgraph)
-            return dotGraph(graph);
-        else {
-            LinkedList<GraphNode> beginners = getBeginners(graph);      // get all clauses from KB and conjecture
-            HashMap<String,String> nameMap = toposort(graph, beginners);
-            TreeMap<String,Clause> proof = renumber(clauseMap,nameMap);
-            return proof2String(proof);
-        }
+            return generateDotGraphProof(res);
+        else 
+            return generateStringProof(res);
     }
-    
+
     /** ***************************************************************
      * ************ UNIT TESTS *****************
      */
