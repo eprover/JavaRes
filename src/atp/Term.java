@@ -43,9 +43,8 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
      */
     public static boolean emptyString(Object s) {
     
-        return ((s == null)
-                || ((s instanceof String)
-                    && s.equals("")));
+        return ((s == null) || 
+                ((s instanceof String) && s.equals("")));
     }
     
     /** ***************************************************************
