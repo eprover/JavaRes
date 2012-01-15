@@ -44,9 +44,11 @@ public class Clause {
     public ArrayList<Literal> literals = new ArrayList<Literal>(); 
     private String type = "plain";
     public String name = "";
-    public ArrayList<String> support = new ArrayList<String>();  // clauses from which this clause is derived
-    public String rationale = "input";                           // if not input, reason for derivation
-    public ArrayList<Integer> evaluation = null;  // Must be the same order as clause evaluation function list in EvalStructure
+    public ArrayList<String> support = new ArrayList<String>();  // clauses from which this clause is derived.
+    public String rationale = "input";                           // if not input, reason for derivation.
+    public ArrayList<Integer> evaluation = null;                 // Must be the same order as clause evaluation 
+                                                                 // function list in EvalStructure.
+    public Substitutions subst = new Substitutions();            // The substitutions that support any derived clause.
     
     /** ***************************************************************
      * Print for use by GraphViz.  Convert vertical bar to HTML code and
@@ -91,6 +93,10 @@ public class Clause {
             }
             result.append("]");
         }
+        if (subst != null && subst.subst.keySet().size() > 0) {
+            result.append(";");
+            result.append(subst.toString());
+        }
         return result.toString();
     }
     
@@ -129,9 +135,38 @@ public class Clause {
             result.support.add(support.get(i));
         for (int i = start; i < literals.size(); i++) 
             result.literals.add(literals.get(i).deepCopy());
+        if (subst != null)
+            result.subst = subst.deepCopy();
         return result;
     }
- 
+    
+    /** ***************************************************************
+     * Check to see if the contents of two clauses are equal.  Ignore
+     * all meta-information such as clause name, type and information
+     * that tracks how it was created.  Note that normalizeVariables()
+     * should first be called so that identical clauses will have
+     * syntactically equal variable names.
+     */
+    public boolean equals(Object c_obj) {
+       
+        assert !c_obj.getClass().getName().equals("Clause") : "Clause() passed object not of type Clause"; 
+        Clause c = (Clause) c_obj;
+        if (literals.size() != c.literals.size())
+            return false;
+        for (int i = 0; i < literals.size(); i++)
+            if (!literals.get(i).equals(c.literals.get(i)))
+                return false;
+        return true;
+    }
+    
+    /** ***************************************************************
+     * should never be called so throw an error.
+     */   
+    public int hashCode() {
+        assert false : "Clause not designed";
+        return 0;
+    }
+    
     /** ***************************************************************
      */
     public int length() {
@@ -305,12 +340,15 @@ public class Clause {
      * Return an instantiated copy of self. Name and type are copied
      * and need to be overwritten if that is not desired.
      */
-    public Clause instantiate(Substitutions subst) {
+    public Clause substitute(Substitutions subst) {
 
+        //System.out.println("INFO in Clause.instantiate(): " + subst);
+        //System.out.println("INFO in Clause.instantiate(): " + this);
         Clause newC = deepCopy();
         newC.literals = new ArrayList<Literal>();
         for (int i = 0; i < literals.size(); i++)
-            newC.literals.add(literals.get(i).instantiate(subst));
+            newC.literals.add(literals.get(i).substitute(subst));
+        //System.out.println("INFO in Clause.instantiate(): " + newC);
         return newC;
     }
     
@@ -321,7 +359,29 @@ public class Clause {
 
         ArrayList<Term> vars = collectVars();
         Substitutions s = Substitutions.freshVarSubst(vars);
-        return instantiate(s);
+        subst.addAll(s);
+        return substitute(s);
+    }
+
+    /** ***************************************************************
+     * Return a copy of self with variables that are renumbered from 0,
+     * which will make clauses that are equal except for their variable
+     * names, syntactically equal. 
+     */
+    public Clause normalizeVarCopy() {
+
+        ArrayList<Term> vars = collectVars();
+        int varCounter = 0;
+        Substitutions s = new Substitutions();
+        for (int i = 0; i < vars.size(); i++) {
+            Term newTerm = new Term();
+            newTerm.t = "VAR" + Integer.toString(varCounter++);
+            s.addSubst(vars.get(i), newTerm);
+        }
+        //System.out.println("INFO in Clause.normalizeVarCopy(): subst: " + s);
+        Clause c = deepCopy();
+        subst.addAll(s);
+        return c.substitute(s);
     }
     
     /** ***************************************************************
@@ -370,7 +430,8 @@ public class Clause {
                "cnf(test3,lemma,(p(a)|~p(f(X)))).\n" +
                "cnf(taut,axiom,p(a)|q(a)|~p(a)).\n" +
                "cnf(dup,axiom,p(a)|q(a)|p(a)).\n" +
-               "cnf(c6,axiom,f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b)).\n";       
+               "cnf(c6,axiom,f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b)).\n" +
+               "cnf(c7,axiom,f(f(X10,X2),f(X30,g(X4,X5)))!=f(f(g(X4,X5),X30),f(X2,X10))|k(X10,X10)!=k(a,b)).\n";  
     }
     
     /** ***************************************************************
@@ -383,41 +444,49 @@ public class Clause {
         Lexer lex = new Lexer(str1);
                 
         try {
-        Clause c1 = new Clause();        
-        c1.parse(lex);
-        assert c1.toString().equals("cnf(test1,axiom,p(a)|p(f(X))).") : 
-               "Failure. " + c1.toString() + " not equal to cnf(test1,axiom,p(a)|p(f(X))).";
-        System.out.println("c1: " + c1);
-        
-        Clause c2 = new Clause();
-        c2.parse(lex);
-        assert c2.toString().equals("cnf(test2,axiom,(p(a)|p(f(X)))).") : 
-            "Failure. " + c2.toString() + " not equal to cnf(test2,axiom,(p(a)|p(f(X)))).";
-        System.out.println("c2: " + c2);
-        
-        Clause c3 = new Clause();
-        c3.parse(lex);
-        assert c3.toString().equals("cnf(test3,lemma,(p(a)|~p(f(X)))).") : 
-            "Failure. " + c3.toString() + " not equal to cnf(test3,lemma,(p(a)|~p(f(X)))).";
-        System.out.println("c3: " + c3);
-        
-        Clause c4 = new Clause();
-        c4.parse(lex);
-        assert c4.toString().equals("cnf(taut,axiom,p(a)|q(a)|~p(a)).") : 
-            "Failure. " + c4.toString() + " not equal to cnf(taut,axiom,p(a)|q(a)|~p(a)).";
-        System.out.println("c4: " + c4);
-        
-        Clause c5 = new Clause();
-        c5.parse(lex);
-        assert c5.toString().equals("cnf(dup,axiom,p(a)|q(a)|p(a)).") : 
-            "Failure. " + c5.toString() + " not equal to cnf(dup,axiom,p(a)|q(a)|p(a)).";
-        System.out.println("c5: " + c5);
-  
-        Clause c6 = new Clause();
-        c6.parse(lex);
-        assert c6.toString().equals("cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).") : 
-            "Failure. " + c6.toString() + " not equal to cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).";
-        System.out.println("c6: " + c6);
+            Clause c1 = new Clause();        
+            c1.parse(lex);
+            assert c1.toString().equals("cnf(test1,axiom,p(a)|p(f(X))).") : 
+                   "Failure. " + c1.toString() + " not equal to cnf(test1,axiom,p(a)|p(f(X))).";
+            System.out.println("c1: " + c1);
+            
+            Clause c2 = new Clause();
+            c2.parse(lex);
+            assert c2.toString().equals("cnf(test2,axiom,(p(a)|p(f(X)))).") : 
+                "Failure. " + c2.toString() + " not equal to cnf(test2,axiom,(p(a)|p(f(X)))).";
+            System.out.println("c2: " + c2);
+            
+            Clause c3 = new Clause();
+            c3.parse(lex);
+            assert c3.toString().equals("cnf(test3,lemma,(p(a)|~p(f(X)))).") : 
+                "Failure. " + c3.toString() + " not equal to cnf(test3,lemma,(p(a)|~p(f(X)))).";
+            System.out.println("c3: " + c3);
+            
+            Clause c4 = new Clause();
+            c4.parse(lex);
+            assert c4.toString().equals("cnf(taut,axiom,p(a)|q(a)|~p(a)).") : 
+                "Failure. " + c4.toString() + " not equal to cnf(taut,axiom,p(a)|q(a)|~p(a)).";
+            System.out.println("c4: " + c4);
+            
+            Clause c5 = new Clause();
+            c5.parse(lex);
+            assert c5.toString().equals("cnf(dup,axiom,p(a)|q(a)|p(a)).") : 
+                "Failure. " + c5.toString() + " not equal to cnf(dup,axiom,p(a)|q(a)|p(a)).";
+            System.out.println("c5: " + c5);
+      
+            Clause c6 = new Clause();
+            c6.parse(lex);
+            assert c6.toString().equals("cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).") : 
+                "Failure. " + c6.toString() + " not equal to cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).";
+            System.out.println("c6: " + c6);
+            
+            Clause c7 = new Clause();
+            c7.parse(lex);
+            assert c7.normalizeVarCopy().equals(c6.normalizeVarCopy());
+            System.out.println("c6: " + c6);
+            System.out.println("c6 normalized: " + c6.normalizeVarCopy());
+            System.out.println("c7: " + c7);
+            System.out.println("c7 normalized: " + c7.normalizeVarCopy());
         }
         catch (ParseException p) {
             System.out.println(p.getMessage());
