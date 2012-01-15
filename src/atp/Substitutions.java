@@ -66,7 +66,7 @@ public class Substitutions {
     /** ***************************************************************
      * Return a copy of the substitution.
      */    
-    public Substitutions copy() {
+    public Substitutions deepCopy() {
 
         Substitutions result = new Substitutions();
         Iterator<Term> it = subst.keySet().iterator();
@@ -102,6 +102,18 @@ public class Substitutions {
      */ 
     public void addSubst(Term t1, Term t2) {
         subst.put(t1,t2);
+    }
+
+    /** ***************************************************************
+     */ 
+    public void addAll(Substitutions s) {
+        
+        Iterator<Term> it = s.subst.keySet().iterator();
+        while (it.hasNext()) {
+            Term t1 = it.next();
+            Term t2 = s.subst.get(t1);
+            subst.put(t1,t2);
+        }
     }
     
     /** ***************************************************************
@@ -275,7 +287,7 @@ public class Substitutions {
             
         System.out.println("---------------------");
         System.out.println("INFO in testSubstBasic()");
-        Substitutions tau = s1.copy();
+        Substitutions tau = s1.deepCopy();
         System.out.println("should be true: " + s1 + " equals " + tau + " " + s1.equals(tau));
         System.out.println("should be true.  Value: " + tau.apply(t6).equals(s1.apply(t6)));        
         System.out.println("should be true.  Value: " + tau.apply(t7).equals(s1.apply(t7)));        
