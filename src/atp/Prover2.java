@@ -51,6 +51,8 @@ public class Prover2 {
         " -f\n" +
         "--forward-subsumption\n" +
         "Discard the given clause if it is subsumed by a processed clause.\n" +
+        " -v\n" +
+        "Verbose mode.  Print extra debugging information.\n" +
         "\n" +
         " -b\n" +
         "--backward-subsumption\n" +
@@ -126,6 +128,8 @@ public class Prover2 {
                         result.put("backward_subsumption","true");
                     if (arg.charAt(j) == 'd')
                         result.put("dotgraph","true");
+                    if (arg.charAt(j) == 'v')
+                        result.put("verbose","true");
                     if (arg.charAt(j) == 'c')
                         result.put("interactive","true");
                     if (arg.equals("-to")) {
@@ -234,14 +238,18 @@ public class Prover2 {
     
     /** ***************************************************************
      */
-    private static void printStateResults(HashMap<String,String> opts, ProofState state) {
+    private static void printStateResults(HashMap<String,String> opts, ProofState state, ClauseSet query) {
         
         //System.out.println("# print results");
         boolean dotgraph = false;
         if (opts.containsKey("dotgraph"))
-            System.out.println(state.generateProof(state.res,true));
-        else if (opts.containsKey("proof"))
+            System.out.println(state.generateDotGraphProof(state.res));
+        else if (opts.containsKey("proof")) {
+            TreeMap<String,Clause> proof = state.generateProofTree(state.res);
+            if (query != null)
+                System.out.println(state.extractAnswer(proof,query.get(0)));
             System.out.println(state.generateProof(state.res,false));
+        }
         else if (opts.containsKey("csvstats"))
             System.out.println(state.generateMatrixStatisticsString());
         else  // (opts.containsKey("stats"))
@@ -275,7 +283,8 @@ public class Prover2 {
                 lex.filename = filename;
                 int timeout = getTimeout(opts);
                 ClauseSet cs = Formula.file2clauses(lex,timeout);  
-                //System.out.println(cs);
+                if (opts.containsKey("verbose"))
+                    System.out.println(cs);
                 if (cs != null) {
                     while (!command.startsWith("$exit")) {
                         System.out.print("TPTP> ");
@@ -291,19 +300,24 @@ public class Prover2 {
                             String id = lex2.look();
                             if (assertMode) {
                                 ClauseSet csnew = Formula.command2clauses(id, lex2, timeout);
+                                if (opts.containsKey("verbose"))
+                                    System.out.println(cs);
                                 if (csnew != null)
                                     cs.addAll(csnew);
                             }
                             else {               
                                 ClauseSet csnew = cs.deepCopy();  // don't add query to the knowledge base
-                                csnew.addAll(Formula.command2clauses(id, lex2, timeout));
+                                ClauseSet query = Formula.command2clauses(id, lex2, timeout);
+                                if (opts.containsKey("verbose"))
+                                    System.out.println(query);
+                                csnew.addAll(query);
                                 ProofState state = new ProofState(csnew,evals.get(0));
                                 setStateOptions(state,opts);
                                 state.filename = filename;
                                 state.evalFunctionName = evals.get(0).name;  
                                 state.res = state.saturate(timeout);
                                 if (state.res != null)
-                                    printStateResults(opts,state);
+                                    printStateResults(opts,state,query);
                                 else
                                     System.out.println("# SZS Satisfiable");
                             }
@@ -351,7 +365,9 @@ public class Prover2 {
                 //System.out.println("# file: " + filename);
                 //System.out.println("# options: " + opts);
                 //System.out.println("# evals: " + evals);
-                ClauseSet cs = Formula.file2clauses(lex,timeout);    
+                ClauseSet cs = Formula.file2clauses(lex,timeout);
+                if (opts.containsKey("verbose"))
+                    System.out.println(cs);
                 if (cs != null) {
                     for (int i = 0; i < evals.size(); i++) {
                         EvalStructure eval = evals.get(i);
@@ -364,7 +380,7 @@ public class Prover2 {
                                 state.evalFunctionName = eval.name;                            
                                 state.res = state.saturate(timeout);
                                 if (state.res != null)
-                                    printStateResults(opts,state);                           
+                                    printStateResults(opts,state,null);                           
                             }
                         }
                         else {
@@ -430,7 +446,7 @@ public class Prover2 {
             else {
                 ProofState state = processTestFile(opts.get("filename"),opts,evals);
                 if (state != null) 
-                    printStateResults(opts, state);                
+                    printStateResults(opts, state,null);                
                 //else
                     //System.out.println("# SZS status Satisfiable");                    
             }                            
