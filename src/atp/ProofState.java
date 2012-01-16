@@ -531,7 +531,15 @@ public class ProofState {
             return null;
         }
         ArrayList<Term> map = extractAnswerRecurse(proof,conjectKey,vars);
-        sb.append(map.toString());
+        if (vars.size() != map.size()) {
+            System.out.println("Error in ProofState.extractAnswer(): variable list: " + vars + 
+                    " not same size as result: " + map);
+            return null;          
+        }
+        sb.append("[");
+        for (int i = 0; i < vars.size(); i++) 
+            sb.append(vars.get(i) + "=" + map.get(i));   
+        sb.append("]");
         return sb.toString();
     }
     
