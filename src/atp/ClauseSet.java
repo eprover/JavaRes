@@ -82,6 +82,14 @@ public class ClauseSet {
 
         clauses.addAll(clauseSet);
     }
+
+    /** ***************************************************************
+     * Add a clause to the clause set.
+     */ 
+    public void addAll(HashSet<Clause> clauseSet) {
+
+        clauses.addAll(clauseSet);
+    }
     
     /** ***************************************************************
      * Remove a clause from the clause set and return it.
@@ -103,6 +111,18 @@ public class ClauseSet {
            return null;
    }
    
+   /** ***************************************************************
+    * Return the negatedConjecture, if it exists.
+    */ 
+   public Clause getConjecture() {
+
+       for (int i = 0; i < clauses.size(); i++) {
+           if (clauses.get(i).name.equals("negatedConjecture"))
+               return clauses.get(i);
+       }
+       return null;
+   }
+
    /** ***************************************************************
     * Return a copy of the instance.
     */                            
