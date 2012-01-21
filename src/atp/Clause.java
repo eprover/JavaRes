@@ -44,8 +44,9 @@ public class Clause {
     public ArrayList<Literal> literals = new ArrayList<Literal>(); 
     private String type = "plain";
     public String name = "";
-    public ArrayList<String> support = new ArrayList<String>();  // clauses from which this clause is derived.
-    public String rationale = "input";                           // if not input, reason for derivation.
+    public ArrayList<String> support = new ArrayList<String>();  // Clauses from which this clause is derived.
+    public int depth = 0;                                        // Depth from input
+    public String rationale = "input";                           // If not input, reason for derivation.
     public ArrayList<Integer> evaluation = null;                 // Must be the same order as clause evaluation 
                                                                  // function list in EvalStructure.
     public Substitutions subst = new Substitutions();            // The substitutions that support any derived clause.
@@ -62,6 +63,16 @@ public class Clause {
             String temp = Literal.literalList2String(literals);
             return temp.replaceAll("\\|", "&#124;");
         }
+    }
+
+    /** ***************************************************************
+     */
+    public ArrayList<String> getConstantStrings() {
+        
+        ArrayList<String> result = new ArrayList<String>();
+        for (int i = 0; i < literals.size(); i++) 
+            result.addAll(literals.get(i).getConstantStrings());
+        return result;
     }
     
     /** ***************************************************************
@@ -100,6 +111,16 @@ public class Clause {
         return result.toString();
     }
     
+    /** ***************************************************************
+     * Print all info about a clause
+     */
+    public String toStringDiag() {
+            
+        StringBuffer result = new StringBuffer();
+        result.append(toStringJustify());
+        result.append(":" + Integer.toString(depth));
+        return result.toString();
+    }
     /** ***************************************************************
      */
     public void createName() {
