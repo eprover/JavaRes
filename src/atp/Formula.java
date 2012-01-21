@@ -124,7 +124,7 @@ public class Formula {
                 Lexer lex2 = new Lexer(f);
                 lex2.filename = filename;
                 System.out.println();
-                ClauseSet newcs = file2clauses(lex2,timeout);
+                ClauseSet newcs = lexer2clauses(lex2,timeout);
                 if (newcs != null)
                     return newcs;
                 else
@@ -169,30 +169,34 @@ public class Formula {
      * for finding a refutation, so it should be more than adequate barring
      * an unusual situation.
      */
-    public static ClauseSet file2clauses(Lexer lex, int timeout) {
+    public static ClauseSet lexer2clauses(Lexer lex, int timeout) {
         
         long t1 = System.currentTimeMillis();
         ClauseSet cs = new ClauseSet();
-        //System.out.println("# INFO in Formula.file2clauses(): reading file: " + lex.filename +
-        //        " with read timeout: " + timeout); 
+        System.out.println("# INFO in Formula.file2clauses(): reading file: " + lex.filename +
+                " with read timeout: " + timeout); 
         System.out.print("#");  
         while (lex.type != Lexer.EOFToken) {
             try {
                 if (lex.input.getLineNumber() % 1000 == 0)
                     System.out.print(".");
-                if (((System.currentTimeMillis() - t1) / 1000.0) > timeout) 
+                if (((System.currentTimeMillis() - t1) / 1000.0) > timeout) {
+                    System.out.println("# Error in Formula.file2clauses(): timeout");
                     return null;
+                }
                 String id = lex.look();
                 cs.addAll(command2clauses(id,lex,timeout));
             }
             catch (ParseException p) {
                 System.out.println();
+                System.out.println("# Error in Formula.file2clauses()");
                 System.out.println(p.getMessage());
                 p.printStackTrace();
                 return cs;
             }
             catch (IOException p) {
                 System.out.println();
+                System.out.println("# Error in Formula.file2clauses()");
                 System.out.println(p.getMessage());
                 p.printStackTrace();
                 return cs;
@@ -204,13 +208,13 @@ public class Formula {
     
     /** ***************************************************************
      */
-    public static ClauseSet file2clauses(Lexer lex) {
-        return file2clauses(lex,10000);
+    public static ClauseSet lexer2clauses(Lexer lex) {
+        return lexer2clauses(lex,10000);
     }
           
     /** ***************************************************************
      */
-    private static ClauseSet file2clauses(String filename, int timeout) {
+    public static ClauseSet file2clauses(String filename, int timeout) {
         
         FileReader fr = null;
         try {
@@ -218,7 +222,7 @@ public class Formula {
             fr = new FileReader(fin);
             if (fr != null) {
                 Lexer lex = new Lexer(fin);
-                return file2clauses(lex);
+                return lexer2clauses(lex);
             }
         }
         catch (IOException e) {
@@ -238,8 +242,35 @@ public class Formula {
     
     /** ***************************************************************
      */
-    private static ClauseSet file2clauses(String filename) {
+    public static ClauseSet file2clauses(String filename) {
         return file2clauses(filename,10000);
+    }
+    
+    /** ***************************************************************
+     */
+    public static ClauseSet string2clauses(String formula, int timeout) {
+        
+        Lexer lex = new Lexer(formula);
+        return lexer2clauses(lex,timeout);
+    }
+    
+    /** ***************************************************************
+     */
+    public static ClauseSet string2clauses(String formula) {
+        return string2clauses(formula,10000);
+    }
+
+    /** ***************************************************************
+     */
+    public static String removeQuotes(String s) {
+        
+        int start = 0;
+        int end = s.length();
+        if (s.charAt(0) == '"' || s.charAt(0) == '\'')
+            start = 1;
+        if (s.charAt(end-1) == '"' || s.charAt(end-1) == '\'')
+            end = end - 1;
+        return s.substring(start,end);
     }
     
     /** ***************************************************************
