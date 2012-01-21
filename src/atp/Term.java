@@ -254,6 +254,21 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
             result.addAll(subterms.get(i).collectVars());
         return result;
     }
+
+    /** ***************************************************************
+     */
+    public ArrayList<String> getConstantStrings() {
+    
+        ArrayList<String> result = new ArrayList<String>();
+        if (Character.isLowerCase(t.charAt(0)))
+            result.add(t);
+        for (int i = 0; i < subterms.size(); i++) {
+            ArrayList<String> temp = subterms.get(i).getConstantStrings();
+            if (temp != null)
+                result.addAll(temp);
+        }
+        return result;
+    }
     
     /** ***************************************************************
      */
