@@ -65,6 +65,8 @@ public class Prover2 {
         "Run all options.  Ignore -tfb command line options and try in all combination.\n" +
         " --allStrat\n" +
         "Run all clause selection strategies.\n" +
+        " --sine\n" +
+        "Run SInE axiom selection.\n" +
         " --proof\n" +
         "Print proofs. Dotgraph and proof options are mutually exclusive. \n" +
         " --stats\n" +
@@ -102,6 +104,8 @@ public class Prover2 {
                     result.put("experiment", "true");
                 if (arg.equals("--allStrat"))
                     result.put("allStrat", "true");
+                if (arg.equals("--sine"))
+                    result.put("sine", "true");
                 if (arg.equals("--delete-tautologies"))
                     result.put("delete-tautologies","true");
                 if (arg.equals("--forward-subsumption"))
@@ -210,7 +214,7 @@ public class Prover2 {
 
     /** ***************************************************************
      */
-    private static int getTimeout(HashMap<String,String> opts) {
+    public static int getTimeout(HashMap<String,String> opts) {
         
         if (opts.containsKey("timeout"))
             return Integer.parseInt(opts.get("timeout"));
@@ -238,7 +242,7 @@ public class Prover2 {
     
     /** ***************************************************************
      */
-    private static void printStateResults(HashMap<String,String> opts, ProofState state, ClauseSet query) {
+    public static void printStateResults(HashMap<String,String> opts, ProofState state, ClauseSet query) {
         
         //System.out.println("# print results");
         boolean dotgraph = false;
@@ -274,142 +278,113 @@ public class Prover2 {
         System.out.println("Starting in query mode.");
         String filename = opts.get("filename");
         boolean assertMode = false; // interpret all formulas as queries
-        FileReader fr = null;
         try {
-            File fin = new File(filename);
-            fr = new FileReader(fin);
-            if (fr != null) {
-                Lexer lex = new Lexer(fin);  
-                lex.filename = filename;
-                int timeout = getTimeout(opts);
-                ClauseSet cs = Formula.file2clauses(lex,timeout);  
-                if (opts.containsKey("verbose"))
-                    System.out.println(cs);
-                if (cs != null) {
-                    while (!command.startsWith("$exit")) {
-                        System.out.print("TPTP> ");
-                        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-                        try {
-                           command = br.readLine();
-                        } catch (IOException ioe) {
-                           System.out.println("IO error trying to read query");
-                           return;
-                        }
-                        if (!command.startsWith("$")) {
-                            Lexer lex2 = new Lexer(command);
-                            String id = lex2.look();
-                            if (assertMode) {
-                                ClauseSet csnew = Formula.command2clauses(id, lex2, timeout);
-                                if (opts.containsKey("verbose"))
-                                    System.out.println(cs);
-                                if (csnew != null)
-                                    cs.addAll(csnew);
-                            }
-                            else {               
-                                ClauseSet csnew = cs.deepCopy();  // don't add query to the knowledge base
-                                ClauseSet query = Formula.command2clauses(id, lex2, timeout);
-                                if (opts.containsKey("verbose"))
-                                    System.out.println(query);
-                                csnew.addAll(query);
-                                ProofState state = new ProofState(csnew,evals.get(0));
-                                setStateOptions(state,opts);
-                                state.filename = filename;
-                                state.evalFunctionName = evals.get(0).name;  
-                                state.res = state.saturate(timeout);
-                                if (state.res != null)
-                                    printStateResults(opts,state,query);
-                                else
-                                    System.out.println("# SZS Satisfiable");
-                            }
-                        }
-                        else if (command.equals("$assert"))
-                            assertMode = true;
-                        else if (command.equals("$query"))
-                            assertMode = false;
+            int timeout = getTimeout(opts);
+            ClauseSet cs = Formula.file2clauses(filename,timeout);  
+            if (opts.containsKey("verbose"))
+                System.out.println(cs);
+            if (cs != null) {
+                while (!command.startsWith("$exit")) {
+                    System.out.print("TPTP> ");
+                    BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+                    try {
+                       command = br.readLine();
+                    } catch (IOException ioe) {
+                       System.out.println("IO error trying to read query");
+                       return;
                     }
+                    if (!command.startsWith("$")) {
+                        Lexer lex2 = new Lexer(command);
+                        String id = lex2.look();
+                        if (assertMode) {
+                            ClauseSet csnew = Formula.command2clauses(id, lex2, timeout);
+                            if (opts.containsKey("verbose"))
+                                System.out.println(cs);
+                            if (csnew != null)
+                                cs.addAll(csnew);
+                        }
+                        else {               
+                            ClauseSet csnew = cs.deepCopy();  // don't add query to the knowledge base
+                            ClauseSet query = Formula.command2clauses(id, lex2, timeout);
+                            if (opts.containsKey("sine")) {
+                                SINE sine = new SINE(cs);                            
+                                csnew = sine.filter(query.extractFirst());
+                            }
+                            if (opts.containsKey("verbose"))
+                                System.out.println(query);
+                            csnew.addAll(query);
+                            ProofState state = new ProofState(csnew,evals.get(0));
+                            setStateOptions(state,opts);
+                            state.filename = filename;
+                            state.evalFunctionName = evals.get(0).name;  
+                            state.res = state.saturate(timeout);
+                            if (state.res != null)
+                                printStateResults(opts,state,query);
+                            else
+                                System.out.println("# SZS Satisfiable");
+                        }
+                    }
+                    else if (command.equals("$assert"))
+                        assertMode = true;
+                    else if (command.equals("$query"))
+                        assertMode = false;
                 }
             }
+            
         }
-        catch (IOException e) {
-            System.out.println("Error in Prover2.runInteractive(): File error reading " + filename + ": " + e.getMessage());
-            e.printStackTrace();
+        catch (IOException pe) {
+            System.out.println("Error in Prover2.runInteractive(): IOException: " + pe.getMessage());
+            pe.printStackTrace();
         }
         catch (ParseException pe) {
             System.out.println("Error in Prover2.runInteractive(): Parse error reading command " + command + ": " + pe.getMessage());
             pe.printStackTrace();
         }
-        finally {
-            try {
-                if (fr != null) fr.close();
-            }
-            catch (Exception e) {
-                System.out.println("Exception in Prover2.runInteractive()" + e.getMessage());
-            }
-        }  
     }
     
     /** ***************************************************************
      * Process a particular problem file with the given list of subsumption
      * options and clause evaluation strategies.
      */
-    private static ProofState processTestFile(String filename, HashMap<String,String> opts, ArrayList<EvalStructure> evals) {
+    public static ProofState processTestFile(String filename, HashMap<String,String> opts, ArrayList<EvalStructure> evals) {
         
-        FileReader fr = null;
-        try {
-            File fin = new File(filename);
-            fr = new FileReader(fin);
-            if (fr != null) {
-                Lexer lex = new Lexer(fin);  
-                lex.filename = filename;
-                int timeout = getTimeout(opts);
-                //System.out.println("# file: " + filename);
-                //System.out.println("# options: " + opts);
-                //System.out.println("# evals: " + evals);
-                ClauseSet cs = Formula.file2clauses(lex,timeout);
-                if (opts.containsKey("verbose"))
-                    System.out.println(cs);
-                if (cs != null) {
-                    for (int i = 0; i < evals.size(); i++) {
-                        EvalStructure eval = evals.get(i);
-                        if (opts.containsKey("allOpts")) {
-                            ArrayList<ProofState> states = setAllStateOptions(cs,evals.get(i));
-                            for (int j = 0; j < states.size(); j++) {
-                                ProofState state = states.get(j);
-                                
-                                state.filename = filename;
-                                state.evalFunctionName = eval.name;                            
-                                state.res = state.saturate(timeout);
-                                if (state.res != null)
-                                    printStateResults(opts,state,null);                           
-                            }
-                        }
-                        else {
-                            ProofState state = new ProofState(cs,evals.get(i)); 
-                            setStateOptions(state,opts);
-                            state.filename = filename;
-                            state.evalFunctionName = eval.name;  
-                            state.res = state.saturate(timeout);
-                            if (state.res != null)
-                                return state;
-                            else
-                                return null;
-                        }
+        int timeout = getTimeout(opts);
+        ClauseSet cs = Formula.file2clauses(filename,timeout);
+        if (opts.containsKey("sine")) {
+            SINE sine = new SINE(cs);
+            Clause conj = cs.getConjecture();
+            if (conj != null)
+                cs = sine.filter(conj);
+        }
+        if (opts.containsKey("verbose"))
+            System.out.println(cs);
+        if (cs != null) {
+            for (int i = 0; i < evals.size(); i++) {
+                EvalStructure eval = evals.get(i);
+                if (opts.containsKey("allOpts")) {
+                    ArrayList<ProofState> states = setAllStateOptions(cs,evals.get(i));
+                    for (int j = 0; j < states.size(); j++) {
+                        ProofState state = states.get(j);                        
+                        state.filename = filename;
+                        state.evalFunctionName = eval.name;                            
+                        state.res = state.saturate(timeout);
+                        if (state.res != null)
+                            printStateResults(opts,state,null);                           
                     }
                 }
+                else {
+                    ProofState state = new ProofState(cs,evals.get(i)); 
+                    setStateOptions(state,opts);
+                    state.filename = filename;
+                    state.evalFunctionName = eval.name;  
+                    state.res = state.saturate(timeout);
+                    if (state.res != null)
+                        return state;
+                    else
+                        return null;
+                }
             }
-        }
-        catch (IOException e) {
-            System.out.println("Error in Prover2.processTestFile(): File error reading " + filename + ": " + e.getMessage());
-            return null;
-        }
-        finally {
-            try {
-                if (fr != null) fr.close();
-            }
-            catch (Exception e) {
-                System.out.println("Exception in Prover2.processTestFile()" + e.getMessage());
-            }
-        }  
+        }            
         return null;
     }
     
