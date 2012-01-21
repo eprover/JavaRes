@@ -155,6 +155,17 @@ public class Literal {
       
          return !Term.emptyString(op);
      }
+
+     /** ***************************************************************
+      */
+     public ArrayList<String> getConstantStrings() {
+         
+         ArrayList<String> result = new ArrayList<String>();
+         result.addAll(lhs.getConstantStrings());
+         if (rhs != null)
+             result.addAll(rhs.getConstantStrings());
+         return result;
+     }
      
      /** ***************************************************************
       */
