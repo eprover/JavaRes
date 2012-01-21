@@ -61,9 +61,6 @@ public class HeuristicClauseSet extends ClauseSet {
      */    
     public Clause extractBestByEval(int heuristic_index) {
 
-        //System.out.println("INFO in HeuristicClauseSet.extractBestByEval(): clauses.size(): " + clauses.size());
-        //System.out.println("INFO in HeuristicClauseSet.extractBestByEval(): clauses: " + clauses);
-        //System.out.println("INFO in HeuristicClauseSet.extractBestByEval(): index: " + heuristic_index);
         if (clauses.size() > 0) {
             int best = 0;
             Clause c = clauses.get(0);
@@ -94,6 +91,45 @@ public class HeuristicClauseSet extends ClauseSet {
         return extractBestByEval(eval_functions.nextEval());
     }
 
+    /** ***************************************************************
+     * Return the clause with the lowest weight according
+     * to the selected heuristic. If the set is empty, return None. 
+     */    
+    public Clause selectBestByEval(int heuristic_index) {
+
+        if (clauses.size() > 0) {
+            int best = 0;
+            Clause c = clauses.get(0);
+            int besteval = c.evaluation.get(heuristic_index);
+            for (int i = 1; i < clauses.size(); i++) {
+                c = clauses.get(i);
+                if (c.evaluation == null)
+                    System.out.println("Error in HeuristicClauseSet.extractBestByEval(): no eval for clause: " + c);
+                if (c.evaluation.get(heuristic_index) < besteval) {
+                    //System.out.println("INFO in HeuristicClauseSet.extractBestByEval(): heuristic: " + i);
+                    besteval = clauses.get(i).evaluation.get(heuristic_index);
+                    best = i;
+                }
+            }
+            return clauses.get(best);
+        }
+        else
+            return null;
+    }
+    
+    /** ***************************************************************
+     * Return the next "best" clause according to the 
+     * evaluation scheme.  Don't increment to the next eval function.
+     */    
+    public Clause selectBest() {
+
+        Clause c = selectBestByEval(eval_functions.nextEval());
+        eval_functions.current--;
+        if (eval_functions.current < 0)
+            eval_functions.current = eval_functions.eval_vec.size() - 1;
+        return c;
+    }
+    
     /** ***************************************************************
      * ************ Define Strategies *****************
      */
