@@ -53,6 +53,7 @@ package atp;
 import java.io.*;
 import java.util.*;  
 import java.text.*;
+import java.lang.Math.*;
 
 public class Resolution {
 
@@ -111,6 +112,7 @@ public class Resolution {
         res.rationale = "resolution";
         res.support.add(clause1.name);
         res.support.add(clause2.name);
+        res.depth = Math.max(clause1.depth,clause2.depth) + 1; 
         res.subst.addAll(sigma);
         //System.out.println("INFO in Resolution.resolution(): result " + res.toStringJustify());
         return res;
