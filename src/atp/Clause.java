@@ -44,12 +44,26 @@ public class Clause {
     public ArrayList<Literal> literals = new ArrayList<Literal>(); 
     private String type = "plain";
     public String name = "";
-    public ArrayList<String> support = new ArrayList<String>();  // Clauses from which this clause is derived.
+    public ArrayList<String> support = new ArrayList<String>();  // Clauses or Formulas from which this clause is derived.
     public int depth = 0;                                        // Depth from input
     public String rationale = "input";                           // If not input, reason for derivation.
     public ArrayList<Integer> evaluation = null;                 // Must be the same order as clause evaluation 
                                                                  // function list in EvalStructure.
     public Substitutions subst = new Substitutions();            // The substitutions that support any derived clause.
+
+    /** ***************************************************************
+     */
+    public Clause() {
+
+    }
+    
+    /** ***************************************************************
+     * Print for use by GraphViz.  Convert vertical bar to HTML code and
+     * just print the formula with no informational wrapper.
+     */
+    public Clause(ArrayList<Literal> litlist) {
+        literals = litlist;
+    }
     
     /** ***************************************************************
      * Print for use by GraphViz.  Convert vertical bar to HTML code and
@@ -237,8 +251,11 @@ public class Clause {
             lex.next(); 
             if (lex.type == Lexer.IdentLower)
                 name = lex.literal;
-            else 
-                throw new Exception("Identifier expected.  Instead found '" + lex.literal + "' with clause so far " + this);
+            else {
+                System.out.println("Warning in Clause.parse(): Identifier expected.  Instead found '" + lex.literal + "' with clause so far " + this);
+                System.out.println("Accepting non-identifier anyway.");
+                name = lex.literal;
+            }
             lex.next(); 
             if (!lex.type.equals(Lexer.Comma))
                 throw new Exception("Comma expected. Instead found '" + lex.literal + "' with clause so far " + this);
@@ -268,8 +285,13 @@ public class Clause {
             }
 
             lex.next();
-            if (!lex.type.equals(Lexer.ClosePar))
-                throw new Exception("Clause close paren expected. Instead found '" + lex.literal + "' with clause so far " + this);
+            if (!lex.type.equals(Lexer.ClosePar)) {
+                //System.out.println("Warning in Clause.parse(): Clause close paren expected. Instead found '" + lex.literal + "' with clause so far " + this);
+                //System.out.println("Discarding remainder of line.");
+                while (lex.type != Lexer.FullStop && lex.type != Lexer.EOFToken)
+                	lex.next();
+                return this;
+            }
             lex.next(); 
             if (!lex.type.equals(Lexer.FullStop))
                 throw new Exception("Period expected. Instead found '" + lex.literal + "' with clause so far " + this);
