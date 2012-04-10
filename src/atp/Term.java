@@ -87,33 +87,6 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
     }
     
     /** ***************************************************************
-     * This routine sets up the StreamTokenizer_s so that it parses TPTP.
-     */
-    public static void setupStreamTokenizer(StreamTokenizer_s st) {
-
-        st.whitespaceChars(0,32);
-        st.ordinaryChars(33,35);   // !"#
-        st.wordChars(36,36);       // $
-        st.ordinaryChars(37,45);   // %&'()*+,-
-        st.ordinaryChars(46,47);   // ./
-        st.wordChars(48,57);       // 0-9
-        st.ordinaryChars(58,59);   // :;
-        st.ordinaryChars(60,62);   // <=>
-        st.ordinaryChars(63,64);   // ?@
-        st.wordChars(65,90);       // A-Z
-        st.ordinaryChars(91,94);   // [\]^
-        st.wordChars(95,95);       // _
-        st.ordinaryChar(96);       // `
-        st.wordChars(97,122);      // a-z
-        st.ordinaryChars(123,255); // {|}~
-        // st.parseNumbers();
-        st.quoteChar('"');
-        st.commentChar('#');
-        st.commentChar('%');
-        st.eolIsSignificant(false);
-    }
-    
-    /** ***************************************************************
      */
     public Term parseTermList(Lexer lex) {
                
@@ -225,7 +198,7 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
      * Check if the term is a compound term. This assumes that t is a
      * well-formed term.
      */
-    public boolean termIsCompound() {
+    public boolean isCompound() {
 
         return !termIsVar();
     }
@@ -254,7 +227,21 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
             result.addAll(subterms.get(i).collectVars());
         return result;
     }
+    
+    /** ***************************************************************
+     * Return all function symbols
+     */
+    public ArrayList<String> collectFuns() {
 
+    	ArrayList<String> res = new ArrayList<String>();
+        if (isCompound()) {
+            res.add(t);
+            for (Term s : subterms)
+                res.addAll(s.collectFuns());
+        }
+        return res;
+    }
+    
     /** ***************************************************************
      */
     public ArrayList<String> getConstantStrings() {
@@ -476,12 +463,12 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
         
         System.out.println("---------------------");
         System.out.println("INFO in testIsCompound(): first false, rest true");
-        System.out.println(t1.termIsCompound());
-        System.out.println(t2.termIsCompound());
-        System.out.println(t3.termIsCompound());
-        System.out.println(t4.termIsCompound());
-        System.out.println(t5.termIsCompound());
-        System.out.println(t6.termIsCompound());
+        System.out.println(t1.isCompound());
+        System.out.println(t2.isCompound());
+        System.out.println(t3.isCompound());
+        System.out.println(t4.isCompound());
+        System.out.println(t5.isCompound());
+        System.out.println(t6.isCompound());
     }
     
     /** ***************************************************************
