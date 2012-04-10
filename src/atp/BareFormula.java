@@ -30,7 +30,7 @@ import java.util.*;
     See literals.py for the definition of atoms.
 
     A formula is either a first-order-atom, or build from pre-existing
-    formulas using the various logical connectives and quantifiers:
+    formulas using the various logical connectives and quantifiers.
 
     Assume F,G are arbitrary formulas and X is an arbitrary variable. Then
 
@@ -80,6 +80,65 @@ public class BareFormula {
     public Literal lit2 = null;        // either child2 or lit2 (or both) must be null
         
     public static int level = 0;
+
+    /** ***************************************************************
+     */
+    public BareFormula() {     
+    }
+    
+    /** ***************************************************************
+     */
+    public BareFormula(String s, BareFormula c1) {
+     
+        op = s;
+        child1 = c1.deepCopy();
+    }
+    
+    /** ***************************************************************
+     */
+    public BareFormula(String s, Literal l1) {
+     
+        op = s;
+        lit1 = l1.deepCopy();
+    }
+    
+    /** ***************************************************************
+     */
+    public BareFormula(String s, Literal l1, BareFormula c2) {
+     
+        op = s;
+        if (l1 != null)
+        	lit1 = l1.deepCopy();
+        if (c2 != null)
+        	child2 = c2.deepCopy();
+    }
+            
+    /** ***************************************************************
+     */
+    public BareFormula(String s, BareFormula c1, BareFormula c2) {
+     
+        op = s;
+        if (c1 != null)
+        	child1 = c1.deepCopy();
+        if (c2 != null)
+        	child2 = c2.deepCopy();
+    }
+    
+    /** ***************************************************************
+     */
+    public BareFormula(String s, BareFormula c1, BareFormula c2, 
+    		Literal l1, Literal l2) {
+     
+        op = s;
+        if (c1 != null)
+        	child1 = c1.deepCopy();
+        if (c2 != null)
+        	child2 = c2.deepCopy();
+        if (l1 != null)
+        	lit1 = l1.deepCopy();
+        if (l2 != null)
+        	lit2 = l2.deepCopy();
+    }
     
     /** ***************************************************************
      * a logical operator other than a quantifier or negation
@@ -93,10 +152,17 @@ public class BareFormula {
     
     /** ***************************************************************
      */
-    public static boolean isQuantifier(String s) {
+    public boolean isQuantified() {
         
-        return s.equals("?") || s.equals("!");
+        return op.equals("?") || op.equals("!");
     }    
+    
+    /** ***************************************************************
+     */
+    public boolean isLiteral() {
+        
+        return Term.emptyString(op) && lit1 != null;
+    }   
     
     /** ***************************************************************
      * a logical operator other than a quantifier,  negation, 'and' or
@@ -104,13 +170,271 @@ public class BareFormula {
      * @return null if not one of these operators and the operator 
      * otherwise
      */
-    private static String isBinaryConnective(String s) throws IOException {
+    private static String isBinaryConnective(String s) {
 
         if (s.equals(Lexer.Nand) || s.equals(Lexer.Nor) || s.equals(Lexer.BImplies) || 
             s.equals(Lexer.Implies) || s.equals(Lexer.Equiv) || s.equals(Lexer.Xor))
             return s;
         else
             return null;
+    }
+    
+    /** ***************************************************************
+     */
+    public boolean isBinary() {
+        
+        if (op.equals(Lexer.Nand) || op.equals(Lexer.Nor) || op.equals(Lexer.BImplies) || 
+            op.equals(Lexer.Implies) || op.equals(Lexer.Equiv) || op.equals(Lexer.Xor) ||
+        	op.equals(Lexer.And) || op.equals(Lexer.Or) )
+            return true;
+        else
+            return false;
+    }
+    
+
+    /** ***************************************************************
+     */
+    public boolean isNoOp() {
+        
+        return Term.emptyString(op);
+    }  
+
+    /** ***************************************************************
+     */
+    public boolean isUnary() {
+        
+        return op.equals("~");
+    }  
+    
+    /** ***************************************************************
+     * Return True if self is a propositional constant of the given
+     * polarity.
+     */
+    public boolean isPropConst(boolean polarity) {
+
+        if (isLiteral())
+            if (polarity && lit1 != null)
+                return lit1.isPropTrue();
+            else
+                return lit1.isPropFalse();
+        else
+            return false;
+    }
+    
+    /** ***************************************************************
+     * Return True if the first child is a propositional constant of the given
+     * polarity.
+     */
+    public boolean is1PropConst(boolean polarity) {
+
+        if (lit1 != null)
+            if (polarity)
+                return lit1.isPropTrue();
+            else
+                return lit1.isPropFalse();
+        else
+            return false;
+    }
+    
+    /** ***************************************************************
+     * Return True if the second child is a propositional constant of the given
+     * polarity.
+     */
+    public boolean is2PropConst(boolean polarity) {
+
+        if (lit2 != null)
+            if (polarity)
+                return lit2.isPropTrue();
+            else
+                return lit2.isPropFalse();
+        else
+            return false;
+    }
+    
+    /** ***************************************************************
+     * Return True iff the formula is a disjunction of literals.
+     */
+    public boolean isLiteralDisjunction() {
+
+        if (isLiteral())
+            return true;
+        if (op == "|")
+            return child1.isLiteralDisjunction() &&
+                   child2.isLiteralDisjunction();
+        return false;
+    }
+    
+    /** ***************************************************************
+     * Return True if the formula is a conjunction of disjunction of
+     * literals.
+     */
+    public boolean isClauseConjunction() {
+
+        if (isLiteral())
+            return true;
+        if (op == "|")
+            return isLiteralDisjunction();
+        if (op == "&")
+            return child1.isClauseConjunction() &&
+                   child2.isClauseConjunction();
+        return false;
+    }
+     
+    /** ***************************************************************
+     * Return True if the formula is in conjunctive normal form.
+     */
+    public boolean isCNF() {
+
+        if (op == "!")
+            return child2.isCNF();
+        return isClauseConjunction();   
+    }
+
+    /** ***************************************************************
+     * Return a list of all non-logical symbols in the formula
+     */
+    public ArrayList<String> getConstantStrings() {
+    	
+    	ArrayList<String> result = new ArrayList<String>();
+    	HashSet<String> resultSet = new HashSet<String>();
+    	if (child1 != null)
+    		resultSet.addAll(child1.getConstantStrings());
+    	if (child2 != null)
+    		resultSet.addAll(child2.getConstantStrings());
+    	if (lit1 != null)
+    		resultSet.addAll(lit1.getConstantStrings());
+    	if (lit2 != null)
+    		resultSet.addAll(lit2.getConstantStrings());
+    	result.addAll(resultSet);
+    	return result;
+    }
+    
+    /** ***************************************************************
+     * Return a list of the subformulas connected by top-level "&".
+     */
+    public ArrayList<BareFormula> conj2List() {
+
+        ArrayList<BareFormula> result = new ArrayList<BareFormula>();
+        if (op.equals("&")) {
+            if (child1 != null)
+                result.addAll(child1.conj2List());
+            else
+                result.add(new BareFormula("", lit1));
+            if (child2 != null)
+                result.addAll(child2.conj2List());
+            else
+                result.add(new BareFormula("", lit2));
+            return result;
+        }
+        result.add(this);
+        return result;
+    }
+    
+    /** ***************************************************************
+     * Return a list of the subformulas connected by top-level "|".
+     */
+    public ArrayList<BareFormula> disj2List() {
+
+        ArrayList<BareFormula> result = new ArrayList<BareFormula>();
+        if (op.equals("|")) {
+            if (child1 != null)
+                result.addAll(child1.disj2List());
+            else
+                result.add(new BareFormula("", lit1));
+            if (child2 != null)
+                result.addAll(child2.disj2List());
+            else
+                result.add(new BareFormula("", lit2));
+            return result;
+        }
+        result.add(this);
+        return result;
+    }
+
+    /** ***************************************************************
+     * Return True if self has a proper subformula as the first
+     * argument. This is false for quantified formulas and literals.
+     */
+    public boolean hasSubform1() {
+        
+        return isUnary() || isBinary();
+    }  
+    
+    /** ***************************************************************
+     * Return True if self has a proper subformula as the first
+     * argument. This is the case for quantified formulas and binary
+     * formulas.
+     */
+    public boolean hasSubform2() {
+        
+        return isQuantified() || isBinary();
+    }  
+    
+    /** ***************************************************************
+     * If a BareFormula has no operator, but does have a child rather
+     * than a literal, promote its first child. Recursively call on 
+     * each child first. Return null if not modified.               
+     */
+    public BareFormula promoteChildren() {
+    	
+    	System.out.println("INFO in BareFormula.promoteChildren(): " + this);
+    	System.out.println("INFO in BareFormula.promoteChildren(): op: " + op);
+    	BareFormula newf = deepCopy();
+    	BareFormula tempf = null;
+    	boolean modified = false;
+    	if (child1 != null) {
+    		tempf = child1.promoteChildren();
+    		if (tempf != null) {
+    			modified = true;
+    			newf.child1 = tempf;
+    	    	System.out.println("INFO in BareFormula.promoteChildren(): child1 modified");
+    		}
+    	}
+    	if (child2 != null) {
+    		tempf = child2.promoteChildren();
+    		if (tempf != null) {
+    			modified = true;
+    			newf.child2 = tempf;
+    	    	System.out.println("INFO in BareFormula.promoteChildren(): child2 modified");
+    		}
+    	}
+		if (lit1 == null && child1 != null && newf.isNoOp()) {
+			BareFormula newnewf = new BareFormula();
+			newnewf.op = newf.child1.op;
+			newnewf.lit1 = newf.child1.lit1;			
+			newnewf.child1 = newf.child1.child1;
+			newnewf.lit2 = newf.child1.lit2;
+			newnewf.child2 = newf.child1.child2;
+			newf = newnewf;
+			modified = true;
+	    	System.out.println("INFO in BareFormula.promoteChildren(): promoting children");
+		}
+		if (modified) {
+	    	System.out.println("INFO in BareFormula.promoteChildren(): returning: " + newf);
+			return newf;
+		}
+		else
+			return null;    	
+    }
+    
+    /** ***************************************************************
+     * Return the formula without any leading quantifiers (if the
+     * formula is in prefix normal form, this is the matrix of the
+     * formula).
+     */
+    public BareFormula getMatrix() {
+
+        BareFormula f = deepCopy();
+        while (f.isQuantified()) {
+            if (f.child2 != null)
+                f = f.child2;
+            else {
+                f.op = "";
+                f.lit1 = f.lit2;
+                f.lit2 = null;
+            }
+        }
+        return f;
     }
     
     /** ***************************************************************
@@ -222,6 +546,29 @@ public class BareFormula {
         
         return true;
     }
+
+    
+    /** ***************************************************************
+     */
+    public boolean childrenEqual() {
+    
+    	if (child1 != null) {
+    		if (child2 == null)
+        		return false;
+    		return child1.equals(child2);
+    	}
+    	else if (child2 != null)
+    		return false;
+    	
+    	if (lit1 != null) {
+    		if (lit2 == null)
+        		return false;
+    		return lit1.equals(lit2);
+    	}
+    	else if (lit2 != null)
+    		return false;
+    	return false;
+    }
     
     /** ***************************************************************
      */
@@ -248,6 +595,117 @@ public class BareFormula {
         return result;
     }
 
+    /** ***************************************************************
+     * Return the set of all variables in self.
+     */
+    public ArrayList<Term> collectVars() {
+
+    	ArrayList<Term> res = null;
+        if (isLiteral())
+            res = lit1.collectVars();
+        else if (isUnary())
+	    	if (child1 != null)
+	    		res = child1.collectVars();
+	    	else
+	    		res = lit1.collectVars(); 
+        else if (isBinary()) {
+            res = child1.collectVars();
+            res.addAll(child2.collectVars());
+        }
+        else {
+            assert isQuantified();
+            res = lit1.collectVars();
+            res.addAll(child2.collectVars());
+        }
+        return res;   
+    }
+    
+    /** ***************************************************************
+     * Return the set of all free variables in self.
+     */
+    public ArrayList<Term> collectFreeVars() {
+
+    	//System.out.println("INFO in BareFormula.collectFreeVars(): " + this + "  op: '" + op + "'");
+        ArrayList<Term> res = new ArrayList<Term>();
+        if (isLiteral())
+            res = lit1.collectVars();
+        else if (isUnary() || Term.emptyString(op)) {
+           	//System.out.println("INFO in BareFormula.collectFreeVars(): unary");
+        	if (child1 != null)
+        		res = child1.collectFreeVars();
+        	else
+        		res = lit1.collectVars();
+        }
+        else if (isBinary()) {
+           	//System.out.println("INFO in BareFormula.collectFreeVars(): binary");
+        	if (child1 != null)
+        		res = child1.collectFreeVars();
+        	else
+        		res = lit1.collectVars();  
+        	if (child2 != null)
+        		res.addAll(child2.collectFreeVars());
+        	else
+        		res.addAll(lit2.collectVars());  
+        }
+        else {
+            // Quantor case. We first collect all free variables in
+            // the quantified formula, then remove the one bound by the
+            // quantifier. 
+           	//System.out.println("INFO in BareFormula.collectFreeVars(): quantified");
+            if (!isQuantified())
+               	System.out.println("Error in BareFormula.collectFreeVars(): expected quantified statement");
+        	if (child2 != null)
+        		res = child2.collectFreeVars();
+        	else
+        		res = lit2.collectVars();             
+            res.removeAll(lit1.collectVars());
+        }
+       	//System.out.println("INFO in BareFormula.collectFreeVars(): returning vars: " + res);
+        return res; 
+    }
+    
+    /** ***************************************************************
+     * Return the set of all (first-order) operators and quantors
+     * used in the formula. This is mostly for unit-testing
+     * transformations later on. 
+     */
+    public ArrayList<String> collectOps() {
+        
+        ArrayList<String> res = new ArrayList<String>();
+        res.add(op);
+    	if (child1 != null)
+    		res.addAll(child1.collectOps());
+    	if (child2 != null)
+    		res.addAll(child2.collectOps());
+        return res;         
+    }
+
+    /** ***************************************************************
+     * Return the set of all function and predicate symbols used in
+     * the formula. 
+     */
+    public ArrayList<String> collectFuns() {
+
+    	ArrayList<String> res = new ArrayList<String>();
+        if (isQuantified()) {
+        	if (child2 != null)
+        		res.addAll(child2.collectFuns());
+        	else
+        		res.addAll(lit2.collectFuns());
+        }
+        else {
+        	if (child1 != null)
+                res.addAll(child1.collectFuns());
+        	if (lit1 != null)
+                res.addAll(lit1.collectFuns());
+        	if (child2 != null)
+                res.addAll(child2.collectFuns());
+        	if (lit2 != null)
+                res.addAll(lit2.collectFuns());
+        }
+        return res;   
+    }
+    
     /** ***************************************************************
      * Substitute one variable for another
      */
@@ -288,10 +746,8 @@ public class BareFormula {
             lex.acceptTok(Lexer.Colon);
             rest = parseUnitaryFormula(lex);            
         }
-        BareFormula result = new BareFormula();
-        result.op = quantor;
-        result.lit1 = var;
-        result.child2 = rest;  // not sure if this is right
+        BareFormula result = new BareFormula(quantor,var);
+        result.child2 = rest;
         //System.out.println("INFO in  BareFormula.parseQuantified(): returning: " + result);
         return result;
     }
@@ -320,17 +776,14 @@ public class BareFormula {
         else if (lex.testTok(Lexer.Negation)) {
             lex.acceptTok(Lexer.Negation);
             BareFormula subform = parseUnitaryFormula(lex);
-            res = new BareFormula();
-            res.op = "~";
-            res.child1 = subform;
+            res = new BareFormula("~",subform);
+
         }
         else {
             //System.out.println("INFO in BareFormula.parseUnitaryFormula(): (2) token: " + lex.literal);
             Literal lit = new Literal();
             lit = lit.parseLiteral(lex);  // stream pointer looks at token after literal
-            res = new BareFormula();
-            res.op = "";
-            res.lit1 = lit;
+            res = new BareFormula("",lit);
         }
         //System.out.println("INFO in BareFormula.parseUnitaryFormula(): returning: " + res);
         return res;
@@ -349,10 +802,7 @@ public class BareFormula {
         while (lex.testLit(op)) {
             lex.acceptLit(op);
             BareFormula next = parseUnitaryFormula(lex);
-            BareFormula newhead = new BareFormula();
-            newhead.op = op;
-            newhead.child1 = head;
-            newhead.child2 = next;
+            BareFormula newhead = new BareFormula(op,head,next);
             head = newhead;
         }
         return head;
@@ -375,10 +825,7 @@ public class BareFormula {
             lex.next();
             BareFormula rest = parseUnitaryFormula(lex);
             BareFormula lhs = res.deepCopy();
-            res = new BareFormula();
-            res.child1 = lhs;
-            res.op = op;
-            res.child2 = rest;  
+            res = new BareFormula(op,lhs,rest);  
         }
         return res;
     }
@@ -401,8 +848,7 @@ public class BareFormula {
     }
     
     /** ***************************************************************
-     * Setup function for clause/literal unit tests. Initialize
-     * variables needed throughout the tests.
+     * ************ UNIT TESTS *****************
      */
     public static String nformulas = "![X]:(a(x) | ~a=b)" +
             "(![X]:a(X)|b(X)|?[X,Y]:(p(X,f(Y))))<=>q(g(a),X)" +
