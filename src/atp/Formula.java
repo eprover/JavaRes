@@ -22,7 +22,6 @@ MA  02111-1307 USA
 import java.io.*;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 /** ***************************************************************
  * Datatype for the complete first-order formula, including 
@@ -38,8 +37,21 @@ public class Formula {
     
     // TPTP file include paths
     public static String includePath = null;  
-    public static String defaultPath = "/home/apease/Programs/TPTP-v5.3.0";
+    // public static String defaultPath = "/home/apease/Programs/TPTP-v5.3.0";
+    public static String defaultPath = "";
+    
+    public ArrayList<String> support = new ArrayList<String>();  // Clauses or Formulas from which this clause is derived.
+    public String rationale = "input";                           // If not input, reason for derivation.
+    public String status = "";
 
+    /** ***************************************************************
+     */
+    public Formula(BareFormula f, String t) {
+        
+        form = f;
+        type = t;
+    }
+    
     /** ***************************************************************
      * Return a string representation of the formula.
      */
@@ -76,8 +88,9 @@ public class Formula {
 
         lex.acceptLit("fof");
         lex.acceptTok(Lexer.OpenPar);
-        String name = lex.lookLit();
-        lex.acceptTok(Lexer.IdentLower);
+        //String name = lex.lookLit();  
+        //lex.acceptTok(Lexer.IdentLower);    used to require alphanumeric ID but E generates number ID
+        String name = lex.next();   // accept any ID
         lex.acceptTok(Lexer.Comma);
         String type = lex.lookLit();
         if (!type.equals("axiom") && !type.equals("conjecture") && !type.equals("negated_conjecture"))
@@ -87,13 +100,20 @@ public class Formula {
 
         BareFormula bform = BareFormula.parse(lex);
         
-        lex.acceptTok(Lexer.ClosePar);
+        lex.next();
+        if (!lex.type.equals(Lexer.ClosePar)) {
+            //System.out.println("Warning in Formula.parse(): Clause close paren expected. Instead found '" + lex.literal + "' with clause so far " + bform);
+            //System.out.println("Discarding remainder of line.");
+            while (lex.type != Lexer.FullStop && lex.type != Lexer.EOFToken)
+            	lex.next();
+            Formula f = new Formula(bform,type);
+            f.name = name;
+            return f;
+        }
         lex.acceptTok(Lexer.FullStop);
 
-        Formula f = new Formula();
-        f.form = bform;
+        Formula f = new Formula(bform,type);
         f.name = name;
-        f.type = type;
         return f;
     }
 
@@ -173,7 +193,7 @@ public class Formula {
         
         long t1 = System.currentTimeMillis();
         ClauseSet cs = new ClauseSet();
-        System.out.println("# INFO in Formula.file2clauses(): reading file: " + lex.filename +
+        System.out.println("# INFO in Formula.lexer2clauses(): reading file: " + lex.filename +
                 " with read timeout: " + timeout); 
         System.out.print("#");  
         while (lex.type != Lexer.EOFToken) {
@@ -181,22 +201,15 @@ public class Formula {
                 if (lex.input.getLineNumber() % 1000 == 0)
                     System.out.print(".");
                 if (((System.currentTimeMillis() - t1) / 1000.0) > timeout) {
-                    System.out.println("# Error in Formula.file2clauses(): timeout");
+                    System.out.println("# Error in Formula.lexer2clauses(): timeout");
                     return null;
                 }
                 String id = lex.look();
                 cs.addAll(command2clauses(id,lex,timeout));
             }
-            catch (ParseException p) {
+            catch (Exception p) {
                 System.out.println();
-                System.out.println("# Error in Formula.file2clauses()");
-                System.out.println(p.getMessage());
-                p.printStackTrace();
-                return cs;
-            }
-            catch (IOException p) {
-                System.out.println();
-                System.out.println("# Error in Formula.file2clauses()");
+                System.out.println("# Error in Formula.lexer2clauses()");
                 System.out.println(p.getMessage());
                 p.printStackTrace();
                 return cs;
@@ -204,6 +217,42 @@ public class Formula {
         }
         System.out.println();
         return cs;
+    }
+
+    /** ***************************************************************
+     * timeout if the total time to process the file exceeds a certain
+     * amount.  Typically, this is called with a timeout equal to the timeout
+     * for finding a refutation, so it should be more than adequate barring
+     * an unusual situation.
+     */
+    public static ArrayList<Formula> lexer2formulas(Lexer lex, int timeout) {
+        
+    	ArrayList<Formula> result = new ArrayList<Formula>();
+        long t1 = System.currentTimeMillis();
+        System.out.println("# INFO in Formula.lexer2formulas(): reading file: " + lex.filename +
+                " with read timeout: " + timeout); 
+        System.out.print("#");  
+        while (lex.type != Lexer.EOFToken) {
+            try {
+                if (lex.input.getLineNumber() % 1000 == 0)
+                    System.out.print(".");
+                if (((System.currentTimeMillis() - t1) / 1000.0) > timeout) {
+                    System.out.println("# Error in Formula.lexer2formulas(): timeout");
+                    return null;
+                }
+                String id = lex.look();
+                result.add(parse(lex));
+            }
+            catch (Exception p) {
+                System.out.println();
+                System.out.println("# Error in Formula.lexer2formulas()");
+                System.out.println(p.getMessage());
+                p.printStackTrace();
+                return result;
+            }
+        }
+        System.out.println();
+        return result;
     }
     
     /** ***************************************************************
@@ -220,8 +269,9 @@ public class Formula {
         try {
             File fin = new File(filename);
             fr = new FileReader(fin);
-            if (fr != null) {
+            if (fr != null && fin.length() > 0) {
                 Lexer lex = new Lexer(fin);
+                lex.filename = filename;
                 return lexer2clauses(lex);
             }
         }
@@ -235,6 +285,36 @@ public class Formula {
             }
             catch (Exception e) {
                 System.out.println("Exception in Formula.file2clauses()" + e.getMessage());
+            }
+        }  
+        return null;
+    }
+    
+    /** ***************************************************************
+     */
+    public static ArrayList<Formula> file2formulas(String filename, int timeout) {
+        
+    	ArrayList<Formula> result = new ArrayList<Formula>();
+        FileReader fr = null;
+        try {
+            File fin = new File(filename);
+            fr = new FileReader(fin);
+            if (fr != null && fin.length() > 0) {
+                Lexer lex = new Lexer(fin);
+                lex.filename = filename;
+                return lexer2formulas(lex,timeout);
+            }
+        }
+        catch (IOException e) {
+            System.out.println("Error in Formula.file2formulas(): File error reading " + filename + ": " + e.getMessage());
+            return null;
+        }
+        finally {
+            try {
+                if (fr != null) fr.close();
+            }
+            catch (Exception e) {
+                System.out.println("Exception in Formula.file2formulas()" + e.getMessage());
             }
         }  
         return null;
@@ -260,6 +340,22 @@ public class Formula {
         return string2clauses(formula,10000);
     }
 
+    /** ***************************************************************
+     */
+    public static Formula string2form(String formula) {
+    	
+        Lexer lex = new Lexer(formula);
+        try {
+        	return parse(lex);
+        }
+        catch (Exception e) {
+            System.out.println("Error in Formula.string2form()");
+            System.out.println(e.getMessage());
+            e.printStackTrace();  
+            return null;
+        }
+    }
+    
     /** ***************************************************************
      */
     public static String removeQuotes(String s) {
