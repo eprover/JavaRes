@@ -33,7 +33,18 @@ public class Literal {
     public Term lhs = null;  // if there's no op, then the literal is just a term, held in lhs
     public Term rhs = null;
     boolean negated = false;
-     
+
+    /** ***************************************************************
+     */
+    public Literal() {
+    }
+    
+    /** ***************************************************************
+     */
+    public Literal(Term t) {
+        lhs = t;
+    }
+    
      /** ***************************************************************
       */
      public String toString() {
@@ -137,6 +148,13 @@ public class Literal {
      
      /** ***************************************************************
       */
+     public Literal negate() {
+         negated = true;
+         return this;
+     }
+     
+     /** ***************************************************************
+      */
      public boolean isNegative() {
         
          return !isPositive();
@@ -156,6 +174,42 @@ public class Literal {
          return !Term.emptyString(op);
      }
 
+     /** ***************************************************************
+      * Return True if the atom is $true.
+      */
+     public boolean atomIsConstTrue() {
+
+         return lhs.t.equals("$true");
+     }
+     
+     /** ***************************************************************
+      * Return True if the atom is $false.
+      */
+     public boolean atomIsConstFalse() {
+
+         return lhs.t.equals("$false");
+     }
+     
+     /** ***************************************************************
+      * Return True if the literal is of the form $true or ~$false.
+      */
+     public boolean isPropTrue() {
+
+         return ((isNegative() && atomIsConstFalse())
+                 || 
+                 (isPositive() && atomIsConstTrue()));
+     }
+     
+     /** ***************************************************************
+      * Return True if the literal is of the form $false or ~$true.
+      */
+     public boolean isPropFalse() {
+
+         return ((isNegative() && atomIsConstTrue())
+                 ||
+                 (isPositive() && atomIsConstFalse()));
+     }
+     
      /** ***************************************************************
       */
      public ArrayList<String> getConstantStrings() {
@@ -177,7 +231,19 @@ public class Literal {
              result.addAll(rhs.collectVars());
          return result;
      }
+     
+     /** ***************************************************************
+      * Get all functions
+      */
+     public ArrayList<String> collectFuns() {
 
+    	 ArrayList<String> res = new ArrayList<String>();
+         res.addAll(lhs.collectFuns());
+         if (rhs != null)
+        	 res.addAll(rhs.collectFuns());
+         return res;
+     }
+     
      /** ***************************************************************
       * Return a copy of self, instantiated with the given substitution.
       */
@@ -384,6 +450,17 @@ public class Literal {
              else 
                  return subst.match(lhs, other.lhs) && subst.match(rhs, other.rhs);             
          }
+     }
+     
+     /** ***************************************************************
+      *  Try to extend subst a match from self to other. Return True on
+      *  success, False otherwise. In the False case, subst is unchanged.
+      */
+     public static Literal string2lit(String s) {
+         
+         Lexer lex = new Lexer(s);
+         Literal l = new Literal();
+         return l.parseLiteral(lex);
      }
      
      /** ***************************************************************
