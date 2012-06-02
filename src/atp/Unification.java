@@ -29,7 +29,7 @@ public class Unification {
      */
     private static boolean occursCheck(Term x, Term t) {
 
-       if (t.termIsCompound()) {
+       if (t.isCompound()) {
             for (int i = 0; i < t.subterms.size(); i++)
                 if (occursCheck(x, t.subterms.get(i)))
                     return true;
@@ -115,7 +115,7 @@ public class Unification {
                 subst.composeBinding(t2, t1);
             }
             else {
-                if (!t1.termIsCompound() || !t2.termIsCompound())
+                if (!t1.isCompound() || !t2.isCompound())
                     return null;
                 // For f(s1, ..., sn) = g(t1, ..., tn), first f and g have to
                 // be equal...
