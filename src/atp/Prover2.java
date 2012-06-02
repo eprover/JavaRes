@@ -421,7 +421,7 @@ public class Prover2 {
             else {
                 ProofState state = processTestFile(opts.get("filename"),opts,evals);
                 if (state != null) 
-                    printStateResults(opts, state,null);                
+                    printStateResults(opts,state,null);                
                 //else
                     //System.out.println("# SZS status Satisfiable");                    
             }                            
