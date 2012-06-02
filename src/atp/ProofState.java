@@ -459,6 +459,30 @@ public class ProofState {
     }
     
     /** ***************************************************************
+     * Generate a TSTP-format proof
+     * cnf(c_0_33,hypothesis,
+     *     ($true|richer(butler,agatha)),
+     *     inference(rw, [status(thm)],[c_0_23,c_0_32,theory(equality)])).
+     */  
+    public String proof2StringTSTP(TreeMap<String,Clause> proof) {
+    
+        StringBuffer sb = new StringBuffer();
+        Iterator<String> it = proof.keySet().iterator();
+        while (it.hasNext()) {
+            String key = it.next();
+            Clause c = proof.get(key);
+            String type = "plain";
+            if (c.rationale.equals("input"))
+            	type = "input";
+            if (c.rationale.equals("negated_conjecture"))
+            	type = "negated_conjecture";
+            sb.append(String.format("cnf(%-5s", (c.name)) + "," + type + "," + 
+            		Literal.literalList2String(c.literals) + "," + c.toStringTSTPJustify() + ").\n");
+        }
+        return sb.toString();
+    }
+    
+    /** ***************************************************************
      * Rename the clauses (including the "support" list in each clause).
      */  
     public TreeMap<String,Clause> renumber(HashMap<String,Clause> clauseMap, HashMap<String,String> nameMap) {
@@ -580,7 +604,8 @@ public class ProofState {
      */  
     public String generateStringProof(Clause res) {
     
-        return proof2String(generateProofTree(res));
+        // return proof2String(generateProofTree(res));
+        return proof2StringTSTP(generateProofTree(res));
     }
 
     /** ***************************************************************
