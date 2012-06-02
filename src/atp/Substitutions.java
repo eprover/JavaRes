@@ -25,7 +25,7 @@ MA  02111-1307 USA
     A substitution is continued to terms recursively:
     sigma(f(t1, ..., tn)) = f(sigma(t1), ..., sigma(t2))
 
-    Substitutions are customarily represented by the Greek letter simga.
+    Substitutions are customarily represented by the Greek letter sigma.
 
     Footnote:
     If more than one substitution is needed, the second one is usually
@@ -185,6 +185,29 @@ public class Substitutions {
         ArrayList<Term> res = new ArrayList<Term>();
         for (int i = 0; i < l.size(); i++)
             res.add(apply(l.get(i)));
+        return res;
+    }
+    
+    /** ***************************************************************
+     * Modify the substitution by adding a new binding (var,term). 
+     * If the term is null, remove any binding for var. If it
+     * is not, add the binding. In either case, return the previous
+     * binding of the variable, or null if it was unbound.
+     */    
+    public Term modifyBinding(Term var, Term binding) {
+
+    	Term res = null;
+        if (isBound(var))
+            res = value(var);
+        else
+            res = null;
+
+        if (binding == null) {        	
+            if (isBound(var))
+                subst.remove(var);
+        }
+        else
+            subst.put(var,binding);
         return res;
     }
     
