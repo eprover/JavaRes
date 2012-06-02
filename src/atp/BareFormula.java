@@ -156,6 +156,13 @@ public class BareFormula {
         
         return op.equals("?") || op.equals("!");
     }    
+
+    /** ***************************************************************
+     */
+    public static boolean isQuantifier(String s) {
+        
+        return s.equals("?") || s.equals("!");
+    }    
     
     /** ***************************************************************
      */
