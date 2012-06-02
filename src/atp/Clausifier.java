@@ -229,7 +229,7 @@ public class Clausifier {
      * ![X]:p(X) | ?[X]:q(X) becomes
      * ![X]:p(X) | ?[Y]:q(Y)
      */
-    private static BareFormula standardizeVariables(BareFormula form) {
+    public static BareFormula standardizeVariables(BareFormula form) {
     
         BareFormula result = form.deepCopy();
         if (form.child1 != null)
