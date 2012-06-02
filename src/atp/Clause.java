@@ -126,6 +126,27 @@ public class Clause {
     }
     
     /** ***************************************************************
+     * Create a string representation of the Clause's
+     * an inference rule and its supporting axioms if it was generated
+     * in inference, in TSTP format.
+     */
+    public String toStringTSTPJustify() {
+            
+        StringBuffer result = new StringBuffer();
+        if (support.size() > 0) {
+            result.append("inference(" + rationale + ",[");
+            result.append(support.get(0));
+            for (int i = 1; i < support.size(); i++) {
+                result.append(",");
+                result.append(support.get(i));
+            }
+            result.append("])");
+        }
+
+        return result.toString();
+    }
+    
+    /** ***************************************************************
      * Print all info about a clause
      */
     public String toStringDiag() {
