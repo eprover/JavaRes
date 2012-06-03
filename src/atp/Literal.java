@@ -245,6 +245,21 @@ public class Literal {
      }
      
      /** ***************************************************************
+      * Collect function- and predicate symbols into the signature. 
+      * Return the signature
+      */
+     public Signature collectSig(Signature sig) {
+
+    	 if (!lhs.termIsVar() && rhs == null)
+    		 sig.addPred(lhs.t,lhs.subterms.size());
+    	 for (Term t : lhs.subterms)
+    		 sig = t.collectSig(sig);
+    	 if (rhs != null) 	    	 
+    		 sig = rhs.collectSig(sig);    	 
+         return sig;
+     }
+     
+     /** ***************************************************************
       * Return a copy of self, instantiated with the given substitution.
       */
      public Literal substitute(Substitutions subst) {
@@ -473,8 +488,9 @@ public class Literal {
      public static Literal a5 = null;
      public static Literal a6 = null;
      public static Literal a7 = null;
+     public static Literal a8 = null;
      
-     public static String input1 = "p(X)  ~q(f(X,a), b)  ~a=b  a!=b  ~a!=f(X,b)  p(X)  ~p(X)";
+     public static String input1 = "p(X)  ~q(f(X,a), b)  ~a=b  a!=b  ~a!=f(X,b)  p(X)  ~p(X) p(a)";
      public static String input2 = "p(X)|~q(f(X,a), b)|~a=b|a!=b|~a!=f(X,b)";
      public static String input3 = "$false";
      public static String input4 = "$false|~q(f(X,a), b)|$false";
@@ -523,6 +539,11 @@ public class Literal {
          a7 = new Literal();
          a7 = a7.parseLiteral(lex);
          System.out.println("INFO in Literal.setup(): finished parsing a7: " + a7);
+         System.out.println("INFO in Literal.setup(): pointing at token: " + lex.literal);
+         
+         a8 = new Literal();
+         a8 = a8.parseLiteral(lex);
+         System.out.println("INFO in Literal.setup(): finished parsing a8: " + a8);
          System.out.println("INFO in Literal.setup(): pointing at token: " + lex.literal);
      }
      
@@ -582,6 +603,13 @@ public class Literal {
          System.out.println("is not equational: " + !a7.isEquational());
          vars = a7.collectVars();
          System.out.println("Number of variables. Should be 1 :" + vars.size());   
+         
+         System.out.println();
+         System.out.println("a8: " + a8);
+         System.out.println("is positive:" + !a8.isNegative());
+         System.out.println("is not equational: " + !a8.isEquational());
+         vars = a8.collectVars();
+         System.out.println("Number of variables. Should be 0 :" + vars.size());   
      }
 
      /** ***************************************************************
@@ -598,6 +626,7 @@ public class Literal {
          System.out.println(a5.weight(2,1) == 9);
          System.out.println(a6.weight(2,1) == 3);
          System.out.println(a7.weight(2,1) == 3);
+         System.out.println(a8.weight(2,1) == 4);
      }
          
      /** ***************************************************************
@@ -647,6 +676,8 @@ public class Literal {
       */
      public static void testTokens() {
          
+         System.out.println("-------------------------------------------------");
+         System.out.println("INFO in testTokens():");
          Lexer lex = new Lexer("0 1 2 3");
          try {
              lex.next();
@@ -662,6 +693,37 @@ public class Literal {
              System.out.println(e.getMessage());
          }
      }
+
+     /** ***************************************************************
+      * Test signature collection.
+      */
+     public static void testSig() {
+
+         System.out.println("-------------------------------------------------");
+         System.out.println("INFO in testSig(): all true");
+         Signature sig = new Signature();
+         sig = a1.collectSig(sig);
+         sig = a2.collectSig(sig);
+         sig = a3.collectSig(sig);
+         sig = a4.collectSig(sig);
+         sig = a5.collectSig(sig);
+         sig = a6.collectSig(sig);
+         sig = a7.collectSig(sig);
+         sig = a8.collectSig(sig);
+         
+         sig.addFun("mult", 2);
+
+         System.out.println(sig);
+         System.out.println(sig.isPred("q"));
+         System.out.println(!sig.isPred("unknown"));
+         System.out.println(!sig.isPred("a"));
+         System.out.println(sig.isFun("a"));
+         System.out.println(!sig.isFun("unknown"));
+         System.out.println(!sig.isFun("q"));
+
+         System.out.println(sig.getArity("b") == 0);
+         System.out.println(sig.getArity("p") == 1) ; 
+     }
      
      /** ***************************************************************
      */
@@ -671,6 +733,7 @@ public class Literal {
         testLiterals();
         testLitWeight();
         testLitList();
+        testSig();
         //testTokens();
     }
 
