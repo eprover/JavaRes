@@ -390,6 +390,16 @@ public class Clause {
     }
     
     /** ***************************************************************
+     * Collect function- and predicate symbols into the signature. 
+     */
+    public Signature collectSig(Signature sig) {
+
+        for (Literal l : literals)
+            sig = l.collectSig(sig);
+        return sig;
+    }
+
+    /** ***************************************************************
      * Return the symbol-count weight of the clause.
      */
     public int weight(int fweight, int vweight) {
