@@ -20,8 +20,8 @@ MA  02111-1307 USA
 */
 
 import java.io.*;
-import java.text.ParseException;
-import java.util.ArrayList;
+import java.text.*;
+import java.util.*;
 
 /** ***************************************************************
  * Datatype for the complete first-order formula, including 
@@ -382,6 +382,8 @@ public class Formula {
      */
     public static void testWrappedFormula() {
         
+        System.out.println("---------------------");
+        System.out.println("INFO in testWrappedFormula()");
         try {
             Lexer lex = new Lexer(wformulas); 
             Formula f1 = Formula.parse(lex);
@@ -406,11 +408,36 @@ public class Formula {
     
     /** ***************************************************************
      */
-    public static void main(String[] args) {
+    public static void testEqAxioms() {
         
-        //testWrappedFormula();
-        if (args.length < 1)
-            System.out.println("Error in main(), expected a filename");
+        System.out.println("---------------------");
+        System.out.println("INFO in testEqAxioms()");
+        try {
+        	String testeq = "fof(eqab, axiom, a=b)." + 
+        	        "fof(pa, axiom, p(a))." + 
+        	        "fof(fb, axiom, ![X]:f(X)=b)." +
+        	        "fof(pa, conjecture, ?[X]:p(f(X))).";
+            Lexer lex = new Lexer(testeq); 
+            ClauseSet cs = Formula.lexer2clauses(lex);
+            System.out.println(cs);
+            cs = cs.addEqAxioms();
+            System.out.println(cs);
+        }
+        catch (Exception e) {
+            System.out.println("Error in Formula.testEqAxioms()");
+            System.out.println(e.getMessage());
+            e.printStackTrace();            
+        }
+    }
+    
+    /** ***************************************************************
+     */
+    public static void main(String[] args) {
+                
+        if (args.length < 1) {
+        	testWrappedFormula();
+        	testEqAxioms();
+        }
         else
             System.out.println(file2clauses(args[0]));
     }
