@@ -101,6 +101,35 @@ public class ClauseSet {
     }
     
     /** ***************************************************************
+     * Collect function- and predicate symbols into the signature.
+     */ 
+    public Signature collectSig(Signature sig) {
+
+        for (Clause c : clauses)
+            sig = c.collectSig(sig);
+        return sig;    
+    }
+    
+    /** ***************************************************************
+     * Add equality axioms (if necessary). 
+     * @return new clauses if equality is present, null otherwise.
+     */
+    public ClauseSet addEqAxioms() {
+
+    	Signature sig = new Signature();
+        sig = collectSig(sig);
+
+        System.out.println("INFO in ClauseSet.addEqAxioms(): signature: " + sig);
+        if (sig.isPred("=")) {         
+            ArrayList<Clause> res = EqAxioms.generateEquivAxioms();
+            res.addAll(EqAxioms.generateCompatAxioms(sig));
+            this.addAll(res);
+            return this;
+        }
+        return null;
+    }
+    
+    /** ***************************************************************
      * Extract and return the first clause.
      */ 
    public Clause extractFirst() {
@@ -169,8 +198,10 @@ public class ClauseSet {
                 if (c == null)
                     return 0;
             }
-            catch (ParseException p) {
-                System.out.println(p.getMessage());
+            catch (Exception e) {
+                System.out.println("Error in ClauseSet.parse():");
+                System.out.println(e.getMessage());
+                e.printStackTrace();
                 return 0;
             }
 
@@ -186,36 +217,33 @@ public class ClauseSet {
     public static ClauseSet parseFromFile(String filename) {
             
         if (filename != null && filename != "") {
-            FileReader fr = null;
+        	File fin = null;
             try {
-                File fin  = new File(filename);
-                if (fr != null) {
+                fin  = new File(filename);
+                if (fin != null) {
                     Lexer lex = new Lexer(fin);               
                     ClauseSet cs = new ClauseSet();
                     cs.parse(lex);
                     return cs;
                 }
+                else {
+                    System.out.println("Error in ClauseSet.parseFromFile(): File error reading " + filename);
+                }
             }
             catch (Exception e) {
                 System.out.println("Error in ClauseSet.parseFromFile(): File error reading " + filename + ": " + e.getMessage());
                 return null;
-            }
-            finally {
-                try {
-                    if (fr != null) fr.close();
-                }
-                catch (Exception e) {
-                    System.out.println("Exception in ClauseSet.parseFromFile()" + e.getMessage());
-                }
-            }                
+            }           
         }   
         return null;
     }
     
     /** ***************************************************************
      */
-    public static void main(String[] args) {
-
+    public static void test1() {
+    	
+        System.out.println("---------------------");
+        System.out.println("INFO in test1()");
         String spec2 = "cnf(axiom, humans_are_mortal, mortal(X)|~human(X)).\n" + 
         "cnf(axiom, socrates_is_human, human(socrates)).\n" +
         "cnf(negated_conjecture, is_socrates_mortal, ~mortal(socrates)).\n";
@@ -226,5 +254,33 @@ public class ClauseSet {
         System.out.println(spec2);
         System.out.println("Actual: ");
         System.out.println(problem);
+    }
+    
+    /** ***************************************************************
+     * Test that clause set initialization and parsing work.
+     */
+    public static void testClauseSetChanges() {
+
+        System.out.println("---------------------");
+        System.out.println("INFO in testClauseSetChanges()");
+        ClauseSet clauses = parseFromFile("/home/apease/Programs/TPTP-v5.3.0/Problems/PUZ/PUZ001-1.p");
+        System.out.println(clauses);
+        int oldlen = clauses.clauses.size();
+        Clause c = clauses.clauses.get(0);
+        clauses.extractClause(c);
+        System.out.println("Should be true: ");
+        System.out.println(clauses.clauses.size() == oldlen-1);
+
+        Signature sig = new Signature();
+        clauses.collectSig(sig);
+        System.out.println(sig);
+    }
+        
+    /** ***************************************************************
+     */
+    public static void main(String[] args) {
+    	
+    	test1();
+    	testClauseSetChanges();
     }
 }
