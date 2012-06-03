@@ -254,8 +254,10 @@ public class Literal {
     		 sig.addPred(lhs.t,lhs.subterms.size());
     	 for (Term t : lhs.subterms)
     		 sig = t.collectSig(sig);
-    	 if (rhs != null) 	    	 
-    		 sig = rhs.collectSig(sig);    	 
+    	 if (rhs != null) {
+    		 sig.addPred(op, 2);
+    		 sig = rhs.collectSig(sig);
+    	 }
          return sig;
      }
      
