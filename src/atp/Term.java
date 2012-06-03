@@ -223,8 +223,13 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
         ArrayList<Term> result = new ArrayList<Term>();
         if (termIsVar())
             result.add(this);
-        for (int i = 0; i < subterms.size(); i++)
-            result.addAll(subterms.get(i).collectVars());
+        for (int i = 0; i < subterms.size(); i++) {
+        	ArrayList<Term> newvars = subterms.get(i).collectVars();
+        	for (Term newv : newvars) {
+        		if (!result.contains(newv))
+        			result.add(newv);
+        	}
+        }
         return result;
     }
     
@@ -236,8 +241,13 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
     	ArrayList<String> res = new ArrayList<String>();
         if (isCompound()) {
             res.add(t);
-            for (Term s : subterms)
-                res.addAll(s.collectFuns());
+            for (Term s : subterms) {
+            	ArrayList<String> newfuns = s.collectFuns();
+            	for (String news : newfuns) {
+            		if (!res.contains(news))
+                        res.add(news);
+            	}
+            }
         }
         return res;
     }
@@ -269,6 +279,20 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
     public ArrayList<Term> getArgs() {
                
         return subterms;
+    }
+
+    /** ***************************************************************
+     *  Insert all function symbols and their associated arities in t into
+     *  the signature       
+     */
+    public Signature collectSig(Signature sig) {
+
+        if (isCompound()) {
+            sig.addFun(getFunc(), subterms.size());
+            for (Term s:getArgs())
+                sig = s.collectSig(sig);
+        }
+        return sig;
     }
     
     /** ***************************************************************
@@ -370,7 +394,8 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
     String example4 = "g(X, f(Y))";     
     String example5 = "g(X, f(Y))";    
     String example6 = "f(X,g(a,b))";    
-    String example7 = "g(X)";   
+    String example7 = "g(X)";
+    String example8 = "g(b,b)";  
 
     Term t1 = null;
     Term t2 = null;
@@ -379,6 +404,7 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
     Term t5 = null;
     Term t6 = null;
     Term t7 = null;
+    Term t8 = null;
     
     /** ***************************************************************
      * Set up test content.  
@@ -392,6 +418,7 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
         t5 = string2Term(example5);
         t6 = string2Term(example6);
         t7 = string2Term(example7);
+        t8 = string2Term(example8);
     }
     
     /** ***************************************************************
@@ -408,6 +435,7 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
         System.out.println(t5 + " = " + example5);
         System.out.println(t6 + " = " + example6);
         System.out.println(t7 + " = " + example7);
+        System.out.println(t8 + " = " + example8);
     }
     
     /** ***************************************************************
@@ -439,6 +467,9 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
         t = new Term();
         t = string2Term(t7.toString());
         System.out.println(t7.toString().equals(t.toString()));
+        t = new Term();
+        t = string2Term(t8.toString());
+        System.out.println(t8.toString().equals(t.toString()));
     }
     
     /** ***************************************************************
@@ -512,6 +543,89 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
     }
     
     /** ***************************************************************
+     * Test if isGround() works as expected. 
+     */
+    public void testIsGround() {
+
+        System.out.println("---------------------");
+        System.out.println("INFO in testIsGround(): all true");
+        System.out.println(!t1.termIsGround());
+        System.out.println(t2.termIsGround());
+        System.out.println(t3.termIsGround());
+        System.out.println(!t4.termIsGround());
+        System.out.println(!t5.termIsGround());
+    }
+
+    /** ***************************************************************
+     * Test the variable collection. 
+     */
+    public void testCollectVars() {
+
+        System.out.println("---------------------");
+        System.out.println("INFO in testCollectVars(): all true");
+        ArrayList<Term> vars = t1.collectVars();
+        System.out.println(vars.size()==1);
+        vars = t2.collectVars();
+        System.out.println(vars.size()==0);
+        vars = t3.collectVars();
+        System.out.println(vars.size()==0);
+        vars = t4.collectVars();
+        System.out.println(vars.size()==2);
+        vars = t5.collectVars();
+        System.out.println(vars.size()==2);
+
+        System.out.println(vars.contains(Term.string2Term("X")));
+        System.out.println(vars.contains(Term.string2Term("Y")));
+    }
+    
+    /** ***************************************************************
+     * Test the function symbol collection. 
+     */
+    public void testCollectFuns() {
+
+        System.out.println("---------------------");
+        System.out.println("INFO in testCollectFuns(): all true");
+        ArrayList<String> funs = t1.collectFuns();
+        System.out.println(funs.size() == 0);
+
+        funs = t2.collectFuns();
+        System.out.println(funs.size() == 1 && funs.contains("a"));
+
+        funs = t3.collectFuns();
+        System.out.println(funs.size() == 3 && funs.contains("g") && funs.contains("a") && funs.contains("b"));
+
+        funs = t4.collectFuns();
+        System.out.println(funs.size() == 2 && funs.contains("g") && funs.contains("f"));
+
+        funs = t5.collectFuns();
+        System.out.println(funs.size() == 2 && funs.contains("g") && funs.contains("f"));
+
+        funs = t8.collectFuns();
+        System.out.println(funs.size() == 2 && funs.contains("g") && funs.contains("b"));
+    }
+    
+    /** ***************************************************************
+     * Test signature collection. 
+     */
+    public void testCollectSig() {
+
+        System.out.println("---------------------");
+        System.out.println("INFO in testCollectSig(): all should be true");
+    	Signature sig = new Signature();
+        sig = t1.collectSig(sig);
+        sig = t2.collectSig(sig);
+        sig = t3.collectSig(sig);
+        sig = t4.collectSig(sig);
+        sig = t5.collectSig(sig);
+        sig = t6.collectSig(sig);
+
+        System.out.println(sig.getArity("f") == 1);
+        System.out.println(sig.getArity("g") == 2);
+        System.out.println(sig.getArity("a") == 0);
+        System.out.println(sig.getArity("b") == 0);
+    }
+    
+    /** ***************************************************************
      * Test term weight function
      */
     public void testTermWeight() {
@@ -561,6 +675,10 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
         p.testIsCompound();
         p.testEquality();
         p.testCopy();
+        p.testIsGround();
+        p.testCollectVars();
+        p.testCollectFuns();        
+        p.testCollectSig();
         p.testTermWeight();
         p.testSubTerm();
     }
