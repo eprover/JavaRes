@@ -65,6 +65,8 @@ public class Prover2 {
         "Run all options.  Ignore -tfb command line options and try in all combination.\n" +
         " --allStrat\n" +
         "Run all clause selection strategies.\n" +
+        " --eqax\n" +
+        "Generate equality axioms.\n" +
         " --sine\n" +
         "Run SInE axiom selection.\n" +
         " --proof\n" +
@@ -106,6 +108,8 @@ public class Prover2 {
                     result.put("allStrat", "true");
                 if (arg.equals("--sine"))
                     result.put("sine", "true");
+                if (arg.equals("--eqax"))
+                    result.put("eqax", "true");
                 if (arg.equals("--delete-tautologies"))
                     result.put("delete-tautologies","true");
                 if (arg.equals("--forward-subsumption"))
@@ -283,6 +287,8 @@ public class Prover2 {
             ClauseSet cs = Formula.file2clauses(filename,timeout);  
             if (opts.containsKey("verbose"))
                 System.out.println(cs);
+            if (opts.containsKey("eqax"))
+                cs = cs.addEqAxioms();
             if (cs != null) {
                 while (!command.startsWith("$exit")) {
                     System.out.print("TPTP> ");
@@ -350,6 +356,8 @@ public class Prover2 {
         
         int timeout = getTimeout(opts);
         ClauseSet cs = Formula.file2clauses(filename,timeout);
+        if (opts.containsKey("eqax"))
+            cs = cs.addEqAxioms();
         if (opts.containsKey("sine")) {
             SINE sine = new SINE(cs);
             Clause conj = cs.getConjecture();
