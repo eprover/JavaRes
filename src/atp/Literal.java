@@ -266,7 +266,7 @@ public class Literal {
       */
      public Literal substitute(Substitutions subst) {
 
-         //System.out.println("INFO in Literal.instantiate(): "  + this + " " + subst);
+         //System.out.println("INFO in Literal.substitute(): "  + this + " " + subst);
          Literal newLit = deepCopy();
          newLit.lhs = subst.apply(lhs);
          if (!Term.emptyString(op))
@@ -459,22 +459,24 @@ public class Literal {
       */
      public boolean match(Literal other, BacktrackSubstitution subst) {
 
+    	 //System.out.println("Literal.match(): this: " + this + " other: " + other + " op: " + op);
          if (this.isNegative() != other.isNegative())
              return false;
          else {
-             if (op != "=")
+             if (!op.equals("=") && !op.equals("!="))
                  return subst.match(lhs, other.lhs);
+             else if (other.op.equals(op))
+                 return subst.match(lhs, other.lhs) && subst.match(rhs, other.rhs);
              else 
-                 return subst.match(lhs, other.lhs) && subst.match(rhs, other.rhs);             
+            	 return false;
          }
      }
      
      /** ***************************************************************
-      *  Try to extend subst a match from self to other. Return True on
-      *  success, False otherwise. In the False case, subst is unchanged.
       */
      public static Literal string2lit(String s) {
          
+    	 //System.out.println("Literal.string2lit(): s: " + s);
          Lexer lex = new Lexer(s);
          Literal l = new Literal();
          return l.parseLiteral(lex);
