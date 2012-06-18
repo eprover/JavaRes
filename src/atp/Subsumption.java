@@ -88,7 +88,8 @@ public class Subsumption {
         int res = subsumed_set.size();
         for (int i = 0; i < subsumed_set.size(); i++) {
             Clause c = subsumed_set.get(i);
-            cs.extractClause(c);
+            if (c.supportsClauses.size() == 0) // make sure that clauses that support others are not removed.
+            	cs.extractClause(c);
         }
         return res;
     }
