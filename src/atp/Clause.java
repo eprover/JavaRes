@@ -42,9 +42,10 @@ public class Clause {
 
     public static int clauseIDcounter = 0;
     public ArrayList<Literal> literals = new ArrayList<Literal>(); 
-    private String type = "plain";
+    public String type = "plain";
     public String name = "";
     public ArrayList<String> support = new ArrayList<String>();  // Clauses or Formulas from which this clause is derived.
+    public ArrayList<String> supportsClauses = new ArrayList<String>();  // Clauses this clause supports.     
     public int depth = 0;                                        // Depth from input
     public String rationale = "input";                           // If not input, reason for derivation.
     public ArrayList<Integer> evaluation = null;                 // Must be the same order as clause evaluation 
