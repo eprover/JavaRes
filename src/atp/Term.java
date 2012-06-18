@@ -343,10 +343,17 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
      */
     @Override public boolean equals(Object other_obj) {
         
-        assert other_obj != null : "Term.equals() argument is null";
-        assert !other_obj.getClass().getName().equals("Term") : "Term.equals() passed object not of type Term"; 
+    	//System.out.println("Term.equals(): term: " + this + " other: " + other_obj);
+        //if (other_obj == null) {
+        //	System.out.println("Term.equals() argument is null");
+        //	return false;
+        //}
+       // if (!other_obj.getClass().getName().equals("Term")) {
+       // 	System.out.println("Term.equals() passed object not of type Term");
+       // 	return false;
+       // }
         Term t2 = (Term) other_obj;
-        //System.out.println("INFO in Term.equals(): term:" + this + " other: " + other);
+        //System.out.println("INFO in Term.equals(): term:" + this + " other: " + other_obj);
         if (!t2.t.equals(t))
             return false;
         if (t2.subterms.size() != subterms.size())
