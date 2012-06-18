@@ -72,6 +72,7 @@ public class ProofState {
     public String SZSresult         = "";  // result as specified by SZS "ontology"
     public String filename          = "";
     public String evalFunctionName  = "";
+    public boolean verbose          = false;
     
     /** ***************************************************************
      * Initialize the proof state with a set of clauses.
@@ -165,8 +166,11 @@ public class ProofState {
 
         processed.add(given_clause);
 
-        for (Clause c:newClauses.clauses)
+        for (Clause c:newClauses.clauses) {
+        	if (verbose)
+        		System.out.println("# ProofState.processClause(): Adding clause: " + c);
             unprocessed.addClause(c);
+        }
         return null;
     }
     
@@ -349,7 +353,7 @@ public class ProofState {
         while (it.hasNext()) {
             String key = it.next();
             Clause c = clauseMap.get(key);
-            // System.out.println("INFO in ProofState.createGraph(): " + c.toString());
+            //System.out.println("INFO in ProofState.createGraph(): " + c.toStringJustify());
             for (int i = 0; i < c.support.size(); i++) {   // get backpointers from c
                 String nodeStr = c.support.get(i);         // nodeStr points from c
                 GraphNode node = null;                     // node is the source of a pointer to c
@@ -476,6 +480,8 @@ public class ProofState {
             	type = "input";
             if (c.rationale.equals("negated_conjecture"))
             	type = "negated_conjecture";
+            if (c.rationale.equals("conjecture"))
+            	type = "conjecture";
             sb.append(String.format("cnf(%-5s", (c.name)) + "," + type + "," + 
             		Literal.literalList2String(c.literals) + "," + c.toStringTSTPJustify() + ").\n");
         }
@@ -563,7 +569,14 @@ public class ProofState {
         sb.append("[");
         for (int i = 0; i < vars.size(); i++) 
             sb.append(vars.get(i) + "=" + map.get(i));   
-        sb.append("]");
+        sb.append("]\n");
+        sb.append("# SZS answers Tuple [");
+        for (int i = 0; i < vars.size(); i++) {
+        	if (i != 0)
+        		sb.append(",");
+            sb.append(map.get(i));         
+        }
+        sb.append("] filename: " + filename);
         return sb.toString();
     }
     
@@ -574,8 +587,10 @@ public class ProofState {
     public void generateProofGraph(Clause res, HashMap<String,Clause> clauseMap, 
             HashMap<String,GraphNode> graph) {
 
+    	//System.out.println("# INFO in ProofState.generateProofGraph()");
         for (int i = 0; i < processed.length(); i++) {
             Clause c = processed.get(i);
+            //System.out.println(c.toStringJustify());
             clauseMap.put(c.name, c);
         }
         clauseMap.putAll(searchProof(clauseMap,res));    // get just the clauses in the proof    
