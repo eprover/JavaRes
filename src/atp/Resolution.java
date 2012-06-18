@@ -66,7 +66,7 @@ public class Resolution {
      */
     public static Clause resolution(Clause clause1, int lit1, Clause clause2, int lit2) {
 
-        //System.out.println("INFO in Resolution.resolution(): resolving (clause1, lit1, clause2, lit2): " + 
+        // System.out.println("INFO in Resolution.resolution(): resolving (clause1, lit1, clause2, lit2): " + 
         //        clause1 + " " + lit1 + " " + clause2 + " " + lit2);
         Literal l1 = clause1.getLiteral(lit1);
         assert l1 != null;
@@ -76,7 +76,26 @@ public class Resolution {
             System.out.println("Error in Resolution.resolution(): literals are null " + l1 + " " + l2);
         if (l1.isNegative() == l2.isNegative())
             return null;
-        Substitutions sigma = Unification.mgu(l1.lhs, l2.lhs);
+        Substitutions sigma = null;
+        if (!Term.emptyString(l1.op) || !Term.emptyString(l2.op)) {
+        	if (l1.op != null && l2.op != null && l1.op.equals(l2.op)) {
+                //System.out.println("INFO in Resolution.resolution(): literals (l1, l2): " + l1 + " " + l2);
+                //System.out.println("INFO in Resolution.resolution(): op1, op2: " + l1.op + " " + l2.op);
+	        	Term term1 = new Term();
+	        	term1.t = l1.op;
+	        	term1.subterms.add(l1.lhs);
+	        	term1.subterms.add(l1.rhs);
+	        	Term term2 = new Term();
+	        	term2.t = l2.op;
+	        	term2.subterms.add(l2.lhs);
+	        	term2.subterms.add(l2.rhs);        	
+	        	sigma = Unification.mgu(term1, term2);
+        	}
+        	else
+        		return null;
+        }
+        else
+        	sigma = Unification.mgu(l1.lhs, l2.lhs);
         //System.out.println("INFO in Resolution.resolution(): sigma " + sigma);
         if (sigma == null)
             return null;
@@ -112,9 +131,11 @@ public class Resolution {
         res.rationale = "resolution";
         res.support.add(clause1.name);
         res.support.add(clause2.name);
+        clause1.supportsClauses.add(res.name);  // Keep track of clauses used to supported others
+        clause2.supportsClauses.add(res.name);  // so they can't be subsumed away.
         res.depth = Math.max(clause1.depth,clause2.depth) + 1; 
         res.subst.addAll(sigma);
-        //System.out.println("INFO in Resolution.resolution(): result " + res.toStringJustify());
+        // System.out.println("INFO in Resolution.resolution(): result " + res.toStringJustify());
         return res;
     }
 
