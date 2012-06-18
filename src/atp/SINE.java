@@ -251,6 +251,44 @@ public class SINE {
     }
 
     /** *************************************************************
+     * Performs axiom selection for given query.
+     * 
+     * @param form, according to which axioms will be selected.
+     * @return Selected formulas.
+     */
+    private HashSet<Clause> performSelection(HashSet<String> syms) {
+
+        //System.out.println("# INFO in SInE.performSelection(): ");
+        HashSet<String> symbols = new HashSet<String>();
+        symbols.addAll(syms);
+        symbols.addAll(getAllSymbols(mandatoryFormulas));            
+        HashSet<Clause> res = getRequiredFormulas(symbols);            
+        res.addAll(mandatoryFormulas);        
+        return res;
+    }
+    
+    /** *************************************************************
+     * @return clauses determined to be relevant to the query
+     */
+    public ClauseSet filter(HashSet<String> syms) {
+        
+        //System.out.println("# INFO in filter(): ");
+        long t1 = System.currentTimeMillis();
+        HashSet<Clause> selectedFormulas = performSelection(syms);        
+        long t_elapsed = (System.currentTimeMillis() - t1);
+
+        System.out.println("# INFO in SInE.submitQuery(): "
+                           + (t_elapsed / 1000.0)
+                           + " seconds to perform axiom selection");
+        System.out.println("# INFO in SInE.submitQuery(): "
+                           + selectedFormulas.size() + " formula(s) selected out of " + 
+                           formulas.size()); 
+        ClauseSet cs = new ClauseSet();
+        cs.addAll(selectedFormulas);                        
+        return cs;
+    }
+
+    /** *************************************************************
      *  A simple test to load a KB file and pose a query, which are
      *  the first and second item, respectively, given on the
      *  command line.
