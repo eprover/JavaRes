@@ -369,8 +369,8 @@ public class Prover2 {
             	System.out.println("# INFO in Prover2.processTestFile(): found conjecture symbols: " + syms);
                 cs = sine.filter(syms);
             }
-            else
-            	System.out.println("# INFO in Prover2.processTestFile(): conjecture not found - can't use SINE: ");	
+            else 
+            	System.out.println("# INFO in Prover2.processTestFile(): conjecture not found - can't use SINE: ");            
         }
         if (opts.containsKey("verbose"))
             System.out.println(cs);
