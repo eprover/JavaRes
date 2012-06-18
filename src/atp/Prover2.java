@@ -223,7 +223,7 @@ public class Prover2 {
         if (opts.containsKey("timeout"))
             return Integer.parseInt(opts.get("timeout"));
         else
-            return 5;
+            return 30;
     }
     
     /** ***************************************************************
@@ -256,7 +256,9 @@ public class Prover2 {
             TreeMap<String,Clause> proof = state.generateProofTree(state.res);
             if (query != null)
                 System.out.println(state.extractAnswer(proof,query.get(0)));
+            System.out.println("# SZS output start CNFRefutation");
             System.out.println(state.generateProof(state.res,false));
+            System.out.println("# SZS output end CNFRefutation");
         }
         else if (opts.containsKey("csvstats"))
             System.out.println(state.generateMatrixStatisticsString());
@@ -295,7 +297,8 @@ public class Prover2 {
                     BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
                     try {
                        command = br.readLine();
-                    } catch (IOException ioe) {
+                    } 
+                    catch (IOException ioe) {
                        System.out.println("IO error trying to read query");
                        return;
                     }
@@ -359,10 +362,15 @@ public class Prover2 {
         if (opts.containsKey("eqax"))
             cs = cs.addEqAxioms();
         if (opts.containsKey("sine")) {
+        	System.out.println("# INFO in Prover2.processTestFile(): using sine");
             SINE sine = new SINE(cs);
-            Clause conj = cs.getConjecture();
-            if (conj != null)
-                cs = sine.filter(conj);
+            HashSet<String> syms = cs.getConjectureSymbols();
+            if (syms != null && syms.size() > 0) {
+            	System.out.println("# INFO in Prover2.processTestFile(): found conjecture symbols: " + syms);
+                cs = sine.filter(syms);
+            }
+            else
+            	System.out.println("# INFO in Prover2.processTestFile(): conjecture not found - can't use SINE: ");	
         }
         if (opts.containsKey("verbose"))
             System.out.println(cs);
@@ -401,6 +409,8 @@ public class Prover2 {
      */
     public static void main(String[] args) {
           
+        Formula.defaultPath = System.getenv("TPTP");
+        System.out.println("Using default include path : " + Formula.defaultPath);
         if (args[0].equals("-h") || args[0].equals("--help")) {
             System.out.println(doc);
             return;
@@ -427,11 +437,14 @@ public class Prover2 {
             else if (opts.containsKey("interactive"))
                 runInteractive(opts,evals);
             else {
+                System.out.println("# INFO in Prover2.main(): Processing file " + opts.get("filename"));
                 ProofState state = processTestFile(opts.get("filename"),opts,evals);
-                if (state != null) 
-                    printStateResults(opts,state,null);                
-                //else
-                    //System.out.println("# SZS status Satisfiable");                    
+                if (state != null) { 
+                    printStateResults(opts,state,null);
+                    System.out.println("# SZS status Theorem for problem " + opts.get("filename")); 
+                }
+                else
+                    System.out.println("# SZS status GaveUp for problem " + opts.get("filename"));                    
             }                            
         }
     }
