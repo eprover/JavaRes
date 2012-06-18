@@ -148,7 +148,8 @@ public class BacktrackSubstitution extends Substitutions {
      * to find a common match for several terms.
      */    
     public boolean match(Term matcher, Term target) {
-            
+
+    	//System.out.println("BacktrackSubstitution.match(): matcher: " + matcher + " target: " + target);
         int bt_state = getState();
         boolean result = true;
 
