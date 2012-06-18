@@ -50,9 +50,15 @@ public class HeuristicClauseSet extends ClauseSet {
      */    
     public void addClause(Clause clause) {
 
-        ArrayList<Integer> evals = eval_functions.evaluate(clause);
-        clause.addEval(evals);
-        super.add(clause);
+    	if (eval_functions == null) {
+    		System.out.println("Error in HeuristicsClauseSet.addClause(): null eval_functions");
+    		return;
+    	}
+    	else {
+	        ArrayList<Integer> evals = eval_functions.evaluate(clause);
+	        clause.addEval(evals);
+	        super.add(clause);
+    	}
     }
     
     /** ***************************************************************
