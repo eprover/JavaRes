@@ -119,7 +119,7 @@ public class ClauseSet {
     	Signature sig = new Signature();
         sig = collectSig(sig);
 
-        System.out.println("INFO in ClauseSet.addEqAxioms(): signature: " + sig);
+        //System.out.println("INFO in ClauseSet.addEqAxioms(): signature: " + sig);
         if (sig.isPred("=")) {         
             ArrayList<Clause> res = EqAxioms.generateEquivAxioms();
             res.addAll(EqAxioms.generateCompatAxioms(sig));
@@ -146,10 +146,27 @@ public class ClauseSet {
    public Clause getConjecture() {
 
        for (int i = 0; i < clauses.size(); i++) {
-           if (clauses.get(i).name.equals("negatedConjecture"))
+           if (clauses.get(i).type.startsWith("negatedConjecture") || clauses.get(i).type.startsWith("conjecture"))
                return clauses.get(i);
        }
        return null;
+   }
+
+   /** ***************************************************************
+    * Return the negatedConjecture, if it exists.
+    */ 
+   public HashSet<String> getConjectureSymbols() {
+
+	   HashSet<String> result = new HashSet<String>();
+       for (int i = 0; i < clauses.size(); i++) {
+           if (clauses.get(i).type.startsWith("negatedConjecture") || clauses.get(i).type.startsWith("conjecture")) {
+        	   Signature sig = new Signature();
+        	   clauses.get(i).collectSig(sig);
+               result.addAll(sig.funs);
+               result.addAll(sig.preds);
+           }
+       }
+       return result;
    }
 
    /** ***************************************************************
@@ -244,9 +261,9 @@ public class ClauseSet {
     	
         System.out.println("---------------------");
         System.out.println("INFO in test1()");
-        String spec2 = "cnf(axiom, humans_are_mortal, mortal(X)|~human(X)).\n" + 
-        "cnf(axiom, socrates_is_human, human(socrates)).\n" +
-        "cnf(negated_conjecture, is_socrates_mortal, ~mortal(socrates)).\n";
+        String spec2 = "cnf(humans_are_mortal, axiom, mortal(X)|~human(X)).\n" + 
+        "cnf(socrates_is_human, axiom, human(socrates)).\n" +
+        "cnf(is_socrates_mortal,negated_conjecture,  ~mortal(socrates)).\n";
         Lexer lex = new Lexer(spec2);        
         ClauseSet problem = new ClauseSet();
         problem.parse(lex);
