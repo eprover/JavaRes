@@ -62,6 +62,8 @@ public class EqAxioms {
 	MA  02111-1307 USA 
 	*/
 
+	public static int axCount = 0;
+	
     /** ***************************************************************
      * Return a list with the three axioms describing an equivalence
      * relation. We are lazy here...
@@ -73,12 +75,12 @@ public class EqAxioms {
 	    		"cnf(transitivity, axiom, X!=Y|Y!=Z|X=Z).");
 	    ArrayList<Clause> res = new ArrayList<Clause>(); 
 	    try {
-	    while (!lex.testTok(Lexer.EOFToken)) {
-	        Clause c = new Clause();
-	        c = c.parse(lex);
-	        c.rationale = "eq_axiom";
-	        res.add(c);
-	    }
+		    while (!lex.testTok(Lexer.EOFToken)) {
+		        Clause c = new Clause();
+		        c = c.parse(lex);
+		        c.rationale = "eq_axiom";
+		        res.add(c);
+		    }
 	    }
 	    catch (ParseException pe) {
 	    	System.out.println("Error in EqAxioms.generateEquivAxioms(): parse error");
@@ -125,6 +127,7 @@ public class EqAxioms {
 	    String rterm = f + "(" + generateVarList("Y",arity) + ")";
 	    Literal concl = Literal.string2lit(lterm + "=" + rterm);
 	    Clause c = new Clause();
+	    c.name = "funcompat" + Integer.toString(axCount++);
 	    c.literals.addAll(res);
 	    c.literals.add(concl);
 	    return c;
@@ -142,6 +145,7 @@ public class EqAxioms {
 	    Literal neg = Literal.string2lit(lterm);
 	    Literal pos = Literal.string2lit(rterm);
 	    Clause c = new Clause();
+	    c.name = "predcompat" + Integer.toString(axCount++);
 	    c.literals.addAll(res);
 	    c.literals.add(neg);
 	    c.literals.add(pos);
@@ -153,6 +157,7 @@ public class EqAxioms {
      */
 	public static ArrayList<Clause> generateCompatAxioms(Signature sig) {
 
+	    //System.out.println("# INFO in EqAxioms.generateCompatAxioms(): signature: " + sig);
 		ArrayList<Clause> res = new ArrayList<Clause>();
 	    for (String f:sig.funs) {
 	        int arity = sig.getArity(f);
@@ -163,11 +168,12 @@ public class EqAxioms {
 	    }
 	    for (String p:sig.preds) {
 	        int arity = sig.getArity(p);
-	        if (arity > 0 && p != "=") {
+	        if (arity > 0 && p != "=" && p != "!=") {
 	            Clause c = generatePredCompatAx(p, arity);
 	            res.add(c);
 	        }
 	    }
+	    //System.out.println("# INFO in EqAxioms.generateCompatAxioms(): result: " + res);
 	    return res;
 	}
 
