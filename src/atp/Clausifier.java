@@ -62,9 +62,9 @@ public class Clausifier {
         if (form.child1 != null)
             result.child1 = removeImpEq(form.child1);
         if (form.child2 != null)
-            newRHS.child2 = removeImpEq(form.child2);
+            newRHS.child1 = removeImpEq(form.child2);
         if (form.lit2 != null)
-            newRHS.lit2 = form.lit2;
+            newRHS.lit1 = form.lit2;
         if (form.lit1 != null)
             result.lit1 = form.lit1;
         result.child2 = newRHS;
@@ -118,7 +118,7 @@ public class Clausifier {
             return removeEq(form);
         }
         else if (form.op.equals(Lexer.BImplies)) {
-            return removeEq(form);
+            return removeBImp(form);
         }
         else {
             BareFormula result = form.deepCopy();
@@ -647,6 +647,10 @@ public class Clausifier {
         typePrefix = f.type;        
         return clausify(f.form);
     }
+
+    /** ***************************************************************
+     * *************** Unit Tests ******************
+     */
     
     /** ***************************************************************
      */
@@ -914,6 +918,17 @@ public class Clausifier {
     
     /** ***************************************************************
      */
+    private static void testFileClaus(String filename) {
+        
+	    System.out.println();
+	    System.out.println("================== testClaus ======================");
+	    ClauseSet cs = Formula.file2clauses(filename); 
+        for (int i = 0; i < cs.clauses.size(); i++)
+            System.out.println(cs.clauses.get(i));  
+    }
+    
+    /** ***************************************************************
+     */
     public static void main(String[] args) {
         
         //testRemoveImpEq();
@@ -922,7 +937,8 @@ public class Clausifier {
         //testStandardizeVariables();
         //testSkolemization();
         //testDistribute();
-        testClausification();
+        //testClausification();
         //testClausificationSimple();
+    	testFileClaus(args[0]);
     }
 }
