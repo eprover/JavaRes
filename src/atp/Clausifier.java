@@ -28,6 +28,7 @@ public class Clausifier {
     public static int varCounter = 0;
     public static int skolemCounter = 0;
     public static int axiomCounter = 0;
+    public static String typePrefix = "axiom";
     
     /** ***************************************************************
      * a->b is the same as -a|b
@@ -47,6 +48,26 @@ public class Clausifier {
         if (form.lit2 != null)
             result.lit2 = form.lit2;
         result.child1 = newLHS;
+        return result;
+    }
+    /** ***************************************************************
+     * a<-b is the same as a|~b
+     */
+    private static BareFormula removeBImp(BareFormula form) {
+    
+        BareFormula result = new BareFormula();
+        result.op = Lexer.Or;
+        BareFormula newRHS = new BareFormula();
+        newRHS.op = Lexer.Negation;
+        if (form.child1 != null)
+            result.child1 = removeImpEq(form.child1);
+        if (form.child2 != null)
+            newRHS.child2 = removeImpEq(form.child2);
+        if (form.lit2 != null)
+            newRHS.lit2 = form.lit2;
+        if (form.lit1 != null)
+            result.lit1 = form.lit1;
+        result.child2 = newRHS;
         return result;
     }
 
@@ -94,6 +115,9 @@ public class Clausifier {
             return removeImp(form);
         }
         else if (form.op.equals(Lexer.Equiv)) {
+            return removeEq(form);
+        }
+        else if (form.op.equals(Lexer.BImplies)) {
             return removeEq(form);
         }
         else {
@@ -593,6 +617,7 @@ public class Clausifier {
             BareFormula form = forms.get(i);
             Clause c = flatten(form);
             c.name = "cnf" + Integer.toString(axiomCounter++);
+            c.type = typePrefix;
             result.add(c);
         }
         return result;
@@ -613,6 +638,14 @@ public class Clausifier {
         ArrayList<BareFormula> forms = separateConjunctions(result);
         ArrayList<Clause> clauses = flattenAll(forms);
         return clauses;
+    }
+    
+    /** ***************************************************************
+     */
+    public static ArrayList<Clause> clausify(Formula f) {
+    
+        typePrefix = f.type;        
+        return clausify(f.form);
     }
     
     /** ***************************************************************
