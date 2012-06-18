@@ -125,12 +125,13 @@ public class Formula {
      */
     public static ClauseSet command2clauses(String id, Lexer lex, int timeout) throws ParseException, IOException {
 
+        //System.out.println("INFO in Formula.command2clauses(): id: " + id);
         ClauseSet cs = new ClauseSet();
         if (id.equals("include")) {
             lex.next();
             lex.next();
             if (lex.type != Lexer.OpenPar)
-                throw new ParseException("Error in Formula.file2clauses(): expected '(', found " + lex.literal,0);
+                throw new ParseException("#Error in Formula.command2clauses(): expected '(', found " + lex.literal,0);
             lex.next();
             String name = lex.literal;
             if (name.charAt(0) == '\'') {
@@ -140,36 +141,38 @@ public class Formula {
                 else
                     filename = includePath + File.separator + name.substring(1,name.length()-1);
                 File f = new File(filename);
-                //System.out.println("INFO in Formula.file2clauses(): start reading file: " + filename);
+                System.out.println("#INFO in Formula.command2clauses(): start reading file: " + filename);
                 Lexer lex2 = new Lexer(f);
                 lex2.filename = filename;
                 System.out.println();
                 ClauseSet newcs = lexer2clauses(lex2,timeout);
+                System.out.println("#INFO in Formula.command2clauses(): completed reading file: " + filename);
+                lex.next();
+                if (lex.type != Lexer.ClosePar)
+                    throw new ParseException("#Error in Formula.command2clauses(): expected ')', found " + lex.literal,0);
+                lex.next();
+                if (lex.type != Lexer.FullStop)
+                    throw new ParseException("#Error in Formula.command2clauses(): expected '.', found " + lex.literal,0);
                 if (newcs != null)
                     return newcs;
                 else
                     return null;
-                //System.out.println("INFO in Formula.file2clauses(): completed reading file: " + filename);
             }
-            lex.next();
-            if (lex.type != Lexer.ClosePar)
-                throw new ParseException("Error in Formula.command2clauses(): expected ')', found " + lex.literal,0);
-            lex.next();
-            if (lex.type != Lexer.FullStop)
-                throw new ParseException("Error in Formula.command2clauses(): expected '.', found " + lex.literal,0);
+            else 
+            	return null;
         }
         else if (id.equals("fof")) {
             Formula f = Formula.parse(lex);
-            //System.out.println("INFO in Formula.file2clauses(): fof: " + f);
+            //System.out.println("# INFO in Formula.command2clauses(): fof: " + f);
             if (f.form != null) {
-                cs.addAll(Clausifier.clausify(f.form));
+                cs.addAll(Clausifier.clausify(f));
                 return cs;
             }
         }
         else if (id.equals("cnf")) {
             Clause clause = new Clause();
             clause = clause.parse(lex);
-            //System.out.println("INFO in Formula.file2clauses(): cnf: " + clause);
+            //System.out.println("INFO in Formula.command2clauses(): cnf: " + clause);
             cs.add(clause);
             return cs; 
         }
@@ -178,8 +181,8 @@ public class Formula {
             return cs;
         }
         else
-            throw new ParseException("Error in Formula.command2clauses: bad id: " + 
-                    id + " at line " + lex.input.getLineNumber(),0);
+            throw new ParseException("#Error in Formula.command2clauses: bad id: " + 
+                    id + " at line " + lex.input.getLineNumber() + " in file " + lex.filename,0);
         return cs;
     }
     
@@ -276,7 +279,7 @@ public class Formula {
             }
         }
         catch (IOException e) {
-            System.out.println("Error in Formula.file2clauses(): File error reading " + filename + ": " + e.getMessage());
+            System.out.println("#Error in Formula.file2clauses(): File error reading " + filename + ": " + e.getMessage());
             return null;
         }
         finally {
@@ -284,7 +287,7 @@ public class Formula {
                 if (fr != null) fr.close();
             }
             catch (Exception e) {
-                System.out.println("Exception in Formula.file2clauses()" + e.getMessage());
+                System.out.println("#Exception in Formula.file2clauses()" + e.getMessage());
             }
         }  
         return null;
@@ -306,7 +309,7 @@ public class Formula {
             }
         }
         catch (IOException e) {
-            System.out.println("Error in Formula.file2formulas(): File error reading " + filename + ": " + e.getMessage());
+            System.out.println("#Error in Formula.file2formulas(): File error reading " + filename + ": " + e.getMessage());
             return null;
         }
         finally {
@@ -314,7 +317,7 @@ public class Formula {
                 if (fr != null) fr.close();
             }
             catch (Exception e) {
-                System.out.println("Exception in Formula.file2formulas()" + e.getMessage());
+                System.out.println("#Exception in Formula.file2formulas()" + e.getMessage());
             }
         }  
         return null;
@@ -432,11 +435,48 @@ public class Formula {
     
     /** ***************************************************************
      */
+    public static void testEqAxiomProving() {
+    	
+        System.out.println("---------------------");
+        System.out.println("INFO in testEqAxiomProving()");
+        try {
+        	String testeq = "fof(eqab, axiom, a=b)." + 
+        	        "fof(pa, axiom, p(a))." + 
+        	        "fof(fb, axiom, ![X]:f(X)=b)." +
+        	        "fof(pa, conjecture, ?[X]:p(f(X))).";
+            Lexer lex = new Lexer(testeq); 
+            ClauseSet cs = Formula.lexer2clauses(lex);
+            System.out.println(cs);
+            cs = cs.addEqAxioms();
+            System.out.println(cs);
+            ClauseEvaluationFunction.setupEvaluationFunctions();
+    	    ProofState state = new ProofState(cs,ClauseEvaluationFunction.PickGiven2); 
+    	    state.evalFunctionName = ClauseEvaluationFunction.PickGiven2.name;  
+            state.delete_tautologies = true;
+            state.forward_subsumption = true;
+            state.backward_subsumption = true;
+            state.verbose = true;
+    	    state.res = state.saturate(100);
+    	    if (state.res != null)
+    	        System.out.println(state);
+    	    else
+    	        System.out.println("# SZS GaveUp");
+        }
+        catch (Exception e) {
+            System.out.println("Error in testEqAxiomProving()");
+            System.out.println(e.getMessage());
+            e.printStackTrace();            
+        }
+    }
+    
+    /** ***************************************************************
+     */
     public static void main(String[] args) {
                 
         if (args.length < 1) {
-        	testWrappedFormula();
-        	testEqAxioms();
+        	//testWrappedFormula();
+        	//testEqAxioms();
+        	testEqAxiomProving();
         }
         else
             System.out.println(file2clauses(args[0]));
