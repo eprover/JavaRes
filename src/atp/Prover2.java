@@ -327,8 +327,11 @@ public class Prover2 {
                             state.filename = filename;
                             state.evalFunctionName = evals.get(0).name;  
                             state.res = state.saturate(timeout);
-                            if (state.res != null)
+                            if (state.res != null) {
+                            	if (cs.SZS.indexOf("Satisfiable") > -1 || cs.SZS.indexOf("CounterSatisfiable") > -1) 
+                            		System.out.println("########### DANGER Proof found for " + cs.SZS + " problem ###############");
                                 printStateResults(opts,state,query);
+                            }
                             else
                                 System.out.println("# SZS Satisfiable");
                         }
@@ -358,7 +361,7 @@ public class Prover2 {
     public static ProofState processTestFile(String filename, HashMap<String,String> opts, ArrayList<EvalStructure> evals) {
         
         int timeout = getTimeout(opts);
-        ClauseSet cs = Formula.file2clauses(filename,timeout);
+        ClauseSet cs = Formula.file2clauses(filename,timeout);  
         if (opts.containsKey("eqax"))
             cs = cs.addEqAxioms();
         if (opts.containsKey("sine")) {
@@ -372,8 +375,8 @@ public class Prover2 {
             else 
             	System.out.println("# INFO in Prover2.processTestFile(): conjecture not found - can't use SINE: ");            
         }
-        if (opts.containsKey("verbose"))
-            System.out.println(cs);
+        if (opts.containsKey("verbose"))         	
+            System.out.println("# Clauses:\n" + cs);        
         if (cs != null) {
             for (int i = 0; i < evals.size(); i++) {
                 EvalStructure eval = evals.get(i);
@@ -384,8 +387,11 @@ public class Prover2 {
                         state.filename = filename;
                         state.evalFunctionName = eval.name;                            
                         state.res = state.saturate(timeout);
-                        if (state.res != null)
-                            printStateResults(opts,state,null);                           
+                        if (state.res != null) {
+                        	if (cs.SZS.indexOf("Satisfiable") > -1 || cs.SZS.indexOf("CounterSatisfiable") > -1) 
+                        		System.out.println("########### DANGER Proof found for " + cs.SZS + " problem ###############");
+                            printStateResults(opts,state,null);
+                        }
                     }
                 }
                 else {
@@ -394,8 +400,11 @@ public class Prover2 {
                     state.filename = filename;
                     state.evalFunctionName = eval.name;  
                     state.res = state.saturate(timeout);
-                    if (state.res != null)
+                    if (state.res != null) {
+                    	if (cs.SZS.indexOf("Satisfiable") > -1 || cs.SZS.indexOf("CounterSatisfiable") > -1) 
+                    		System.out.println("########### DANGER Proof found for " + cs.SZS + " problem ###############");
                         return state;
+                    }
                     else
                         return null;
                 }
