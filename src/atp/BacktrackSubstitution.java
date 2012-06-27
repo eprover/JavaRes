@@ -153,7 +153,7 @@ public class BacktrackSubstitution extends Substitutions {
         int bt_state = getState();
         boolean result = true;
 
-        if (matcher.termIsVar()) {
+        if (matcher.isVar()) {
            if (isBound(matcher)) {
               if (!value(matcher).equals(target))
                  result = false;
@@ -163,7 +163,7 @@ public class BacktrackSubstitution extends Substitutions {
               addBinding(matcher, target);
         }
         else {
-           if (target.termIsVar() || !matcher.getFunc().equals(target.getFunc()))
+           if (target.isVar() || !matcher.getFunc().equals(target.getFunc()))
               result = false;
            else {
               int index = matcher.getArgs().size();
@@ -204,7 +204,7 @@ public class BacktrackSubstitution extends Substitutions {
             Term matcher  = mlist.pop();
             Term target   = tlist.pop();
 
-            if (matcher.termIsVar()) {
+            if (matcher.isVar()) {
                 if (isBound(matcher)) {
                     if (!value(matcher).equals(target)) {
                         result = false;
@@ -216,7 +216,7 @@ public class BacktrackSubstitution extends Substitutions {
                     addBinding(matcher, target);
             }
             else {
-                if (target.termIsVar() || !matcher.getFunc().equals(target.getFunc())) {
+                if (target.isVar() || !matcher.getFunc().equals(target.getFunc())) {
                     result = false;
                     break;
                 }
