@@ -66,7 +66,7 @@ public class Resolution {
      */
     public static Clause resolution(Clause clause1, int lit1, Clause clause2, int lit2) {
 
-        // System.out.println("INFO in Resolution.resolution(): resolving (clause1, lit1, clause2, lit2): " + 
+        //System.out.println("INFO in Resolution.resolution(): resolving (clause1, lit1, clause2, lit2): " + 
         //        clause1 + " " + lit1 + " " + clause2 + " " + lit2);
         Literal l1 = clause1.getLiteral(lit1);
         assert l1 != null;
@@ -76,26 +76,10 @@ public class Resolution {
             System.out.println("Error in Resolution.resolution(): literals are null " + l1 + " " + l2);
         if (l1.isNegative() == l2.isNegative())
             return null;
+        //System.out.println("INFO in Resolution.resolution():l1 is negative: " + l1.isNegative());
+        //System.out.println("INFO in Resolution.resolution():l2 is negative: " + l2.isNegative());
         Substitutions sigma = null;
-        if (!Term.emptyString(l1.op) || !Term.emptyString(l2.op)) {
-        	if (l1.op != null && l2.op != null && l1.op.equals(l2.op)) {
-                //System.out.println("INFO in Resolution.resolution(): literals (l1, l2): " + l1 + " " + l2);
-                //System.out.println("INFO in Resolution.resolution(): op1, op2: " + l1.op + " " + l2.op);
-	        	Term term1 = new Term();
-	        	term1.t = l1.op;
-	        	term1.subterms.add(l1.lhs);
-	        	term1.subterms.add(l1.rhs);
-	        	Term term2 = new Term();
-	        	term2.t = l2.op;
-	        	term2.subterms.add(l2.lhs);
-	        	term2.subterms.add(l2.rhs);        	
-	        	sigma = Unification.mgu(term1, term2);
-        	}
-        	else
-        		return null;
-        }
-        else
-        	sigma = Unification.mgu(l1.lhs, l2.lhs);
+       	sigma = Unification.mgu(l1.atom, l2.atom);
         //System.out.println("INFO in Resolution.resolution(): sigma " + sigma);
         if (sigma == null)
             return null;
@@ -135,7 +119,7 @@ public class Resolution {
         clause2.supportsClauses.add(res.name);  // so they can't be subsumed away.
         res.depth = Math.max(clause1.depth,clause2.depth) + 1; 
         res.subst.addAll(sigma);
-        // System.out.println("INFO in Resolution.resolution(): result " + res.toStringJustify());
+        //System.out.println("INFO in Resolution.resolution(): result " + res.toStringJustify());
         return res;
     }
 
@@ -151,7 +135,8 @@ public class Resolution {
         Literal l2 = clause.getLiteral(lit2);
         if (l1.isNegative() != l2.isNegative())
             return null;
-        Substitutions sigma = Unification.mgu(l1.lhs, l2.lhs);
+        Substitutions sigma = null;
+       	sigma = Unification.mgu(l1.atom, l2.atom);
         if (sigma == null)
             return null;
         ArrayList<Literal> lits = new ArrayList<Literal>();
@@ -179,6 +164,8 @@ public class Resolution {
     public static Clause c5 = new Clause();
     public static Clause c6 = new Clause();
     public static Clause c7 = new Clause();
+    public static Clause c8 = new Clause();
+    public static Clause c9 = new Clause();
     
     /** ***************************************************************
      * Setup function for resolution testing
@@ -189,28 +176,34 @@ public class Resolution {
            "cnf(c2,axiom,~p(a,b)|p(f(Y),a)).\n" +
            "cnf(c3,axiom,p(Z,X)|~p(f(Z),X0)).\n" +
            "cnf(c4,axiom,p(X,X)|p(a,f(Y))).\n" +
-           "cnf(ftest,axiom,p(X)|~q|p(a)|~q|p(Y)).";
+           "cnf(ftest,axiom,p(X)|~q|p(a)|~q|p(Y))."; 
        Lexer lex = new Lexer(spec);
        try {
-       c1.parse(lex);
-       c2.parse(lex);
-       c3.parse(lex);
-       c4.parse(lex);
-       c5.parse(lex);
-       System.out.println("Resolution.setup(): expected clauses:");
-       System.out.println(spec);
-       System.out.println("actual:");
-       System.out.println(c1);
-       System.out.println(c2);
-       System.out.println(c3);
-       System.out.println(c4);
-       System.out.println(c5); 
-       
-       String spec2 = "cnf(not_p,axiom,~p(a)).\n" + 
-       "cnf(taut,axiom,p(X4)|~p(X4)).\n";
-       lex = new Lexer(spec2);
-       c6.parse(lex);
-       c7.parse(lex);
+	       c1.parse(lex);
+	       c2.parse(lex);
+	       c3.parse(lex);
+	       c4.parse(lex);
+	       c5.parse(lex);
+	       System.out.println("Resolution.setup(): expected clauses:");
+	       System.out.println(spec);
+	       System.out.println("actual:");
+	       System.out.println(c1);
+	       System.out.println(c2);
+	       System.out.println(c3);
+	       System.out.println(c4);
+	       System.out.println(c5); 
+	       
+	       String spec2 = "cnf(not_p,axiom,~p(a)).\n" + 
+	       "cnf(taut,axiom,p(X4)|~p(X4)).\n";
+	       lex = new Lexer(spec2);
+	       c6.parse(lex);
+	       c7.parse(lex);
+	       
+	       String spec3 = "cnf(00019,plain,disjoint(X212, null_class))." +
+	       "cnf(00020,plain,~disjoint(X271, X271)|~member(X270, X271)).";
+	       lex = new Lexer(spec3);
+	       c8.parse(lex);
+	       c9.parse(lex);
        }
        catch (ParseException p) {
            System.out.println(p.getMessage());
@@ -223,6 +216,7 @@ public class Resolution {
     public static void testResolution() {
         
         System.out.println("Resolution.testResolution()");
+        
         Clause res1 = resolution(c1, 0, c2,0);
         assert res1 != null;
         System.out.println("expected result: cnf(c1,plain,p(b,a)|p(f(Y),a)). result: " + res1);
@@ -242,6 +236,10 @@ public class Resolution {
         Clause res5 = resolution(c6, 0, c7,0);
         assert res5 != null;
         System.out.println("Resolution.testResolution(): cnf(~p(a)) successful result: " + res5);
+        
+        Clause res6 = resolution(c8, 0, c9,0);
+        assert res6 != null;
+        System.out.println("Resolution.testResolution(): ~member(X270, null_class) successful result: " + res6);
     }
     
     /** ***************************************************************
