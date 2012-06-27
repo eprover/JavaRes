@@ -271,7 +271,7 @@ public class SmallCNFization extends Clausifier {
             // ?[X] F -> F if X is not free in F
             ArrayList<Term> vars = f.child1.collectFreeVars();   // but test for null and test lit1
         	//System.out.println("INFO in SmallCNFization.formulaTopSimplify(): vars"  + vars);
-            if (!vars.contains(f.lit1.lhs)) {
+            if (!vars.contains(f.lit1.atom)) {
             	//System.out.println("INFO in SmallCNFization.formulaTopSimplify(): no free vars: " + f);
             	//System.out.println("INFO in SmallCNFization.formulaTopSimplify(): lit2: " + f.lit2);
             	//System.out.println("INFO in SmallCNFization.formulaTopSimplify(): child2: " + f.child2);
@@ -620,14 +620,14 @@ public class SmallCNFization extends Clausifier {
             f = new BareFormula("", child);
         }
         else if (f.op.equals("?")) {
-            Term var = f.lit1.lhs;
+            Term var = f.lit1.atom;
             Term skTerm = newSkolemTerm(variables);
             Term oldbinding = subst.modifyBinding(var,skTerm);
             f = formulaRekSkolemize(f.child2, variables, subst);
             subst.modifyBinding(var, oldbinding);
         }
         else if (f.op.equals("!")) {
-            Term var = f.lit1.lhs;
+            Term var = f.lit1.atom;
             variables.add(var);
             BareFormula handle = formulaRekSkolemize(f.child2, variables, subst);
             f = new BareFormula("!", new Literal(var), handle);
@@ -672,7 +672,7 @@ public class SmallCNFization extends Clausifier {
 
         if (f.isQuantified()) {
             assert f.op.equals("!");
-            varlist.add(f.lit1.lhs);
+            varlist.add(f.lit1.atom);
             result = separateQuantors(f.child2, varlist);
         }
         else if (!f.isLiteral()) {
