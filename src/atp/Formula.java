@@ -219,6 +219,7 @@ public class Formula {
             }
         }
         System.out.println();
+        cs.SZS = lex.SZS;
         return cs;
     }
 
@@ -471,12 +472,58 @@ public class Formula {
     
     /** ***************************************************************
      */
+    public static void testEqAxiomProving2() {
+    	
+        System.out.println("---------------------");
+        System.out.println("INFO in testEqAxiomProving2()");
+        try {
+        	String testeq = "cnf(00004,plain,~X79=X77|~X77=X80|X79=X80). " +
+        		"cnf(00005,input,apply(apply(apply(n1, X4), X5), X6)=apply(apply(apply(X4, X5), X5), X6))."; 
+        		// "cnf(00076,plain,~X159=apply(apply(apply(n1, X160), X161), X162)|X159=apply(apply(apply(X160, X161), X161), X162)).";
+            Lexer lex = new Lexer(testeq); 
+            ClauseSet cs = Formula.lexer2clauses(lex);
+            System.out.println(cs);
+            ClauseEvaluationFunction.setupEvaluationFunctions();
+            System.out.println(ResControl.computeAllResolvents(cs.get(0), cs));
+        }
+        catch (Exception e) {
+            System.out.println("Error in testEqAxiomProving2()");
+            System.out.println(e.getMessage());
+            e.printStackTrace();            
+        }
+    }
+    
+    /** ***************************************************************
+     */
+    public static void testEqAxiomProving3() {
+    	
+        System.out.println("---------------------");
+        System.out.println("INFO in testEqAxiomProving3()");
+        try {
+        	String testeq = "cnf(00004,plain,X=X). " +
+        		"cnf(00005,input,Y!=m | Y=n)."; 
+        		// "cnf(00076,plain,~X159=apply(apply(apply(n1, X160), X161), X162)|X159=apply(apply(apply(X160, X161), X161), X162)).";
+            Lexer lex = new Lexer(testeq); 
+            ClauseSet cs = Formula.lexer2clauses(lex);
+            System.out.println(cs);
+            ClauseEvaluationFunction.setupEvaluationFunctions();
+            System.out.println(ResControl.computeAllResolvents(cs.get(0), cs));
+        }
+        catch (Exception e) {
+            System.out.println("Error in testEqAxiomProving3()");
+            System.out.println(e.getMessage());
+            e.printStackTrace();            
+        }
+    }
+
+    /** ***************************************************************
+     */
     public static void main(String[] args) {
                 
         if (args.length < 1) {
         	//testWrappedFormula();
         	//testEqAxioms();
-        	testEqAxiomProving();
+        	testEqAxiomProving2();
         }
         else
             System.out.println(file2clauses(args[0]));
