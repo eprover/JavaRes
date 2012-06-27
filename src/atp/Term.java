@@ -37,6 +37,20 @@ public class Term {
 public String t = "";  // lowercase is a constant, uppercase is a variable
 public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not composite
 
+	/** ***************************************************************
+	 */
+	public Term() {
+
+	}
+
+	/** ***************************************************************
+	 */
+	public Term(String op, Term t1, Term t2) {
+		t = op;
+		subterms.add(t1);
+		subterms.add(t2);
+	}
+	
     /** ***************************************************************
      * @param s An input Object, expected to be a String.
      * @return true if s == null or s is an empty String, else false.
@@ -189,7 +203,7 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
      * Check if the term is a variable. This assumes that t is a
      * well-formed term.
      */
-    public boolean termIsVar() {
+    public boolean isVar() {
        
         return Character.isUpperCase(t.charAt(0));
     }
@@ -200,18 +214,18 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
      */
     public boolean isCompound() {
 
-        return !termIsVar();
+        return !isVar();
     }
     
     /** ***************************************************************
      * Return True if term has no variables, False otherwise
      */
-    public boolean termIsGround() { 
+    public boolean isGround() { 
         
         if (!Term.emptyString(t) && Character.isUpperCase(t.charAt(0)))
             return false;
         for (int i = 0; i < subterms.size(); i++)
-            if (!subterms.get(i).termIsGround())
+            if (!subterms.get(i).isGround())
                 return false;
         return true;
     }
@@ -221,7 +235,7 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
     public ArrayList<Term> collectVars() {
         
         ArrayList<Term> result = new ArrayList<Term>();
-        if (termIsVar())
+        if (isVar())
             result.add(this);
         for (int i = 0; i < subterms.size(); i++) {
         	ArrayList<Term> newvars = subterms.get(i).collectVars();
@@ -304,7 +318,7 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
      *                  termWeight(X, 2, 1)      = 1
      *                  termWeight(g(a), 3, 1)   = 6
      */
-    public int termWeight(int fweight, int vweight) {
+    public int weight(int fweight, int vweight) {
         
         int total = 0;
         if (Character.isUpperCase(t.charAt(0)))
@@ -312,7 +326,7 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
         else
             total = fweight;
         for (int i = 0; i < subterms.size(); i++)
-            total = total + subterms.get(i).termWeight(fweight,vweight);
+            total = total + subterms.get(i).weight(fweight,vweight);
         return total;
     }
     
@@ -486,12 +500,12 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
 
         System.out.println("---------------------");
         System.out.println("INFO in testIsVar(): first true, rest false");
-        System.out.println(t1.termIsVar());
-        System.out.println(t2.termIsVar());
-        System.out.println(t3.termIsVar());
-        System.out.println(t4.termIsVar());
-        System.out.println(t5.termIsVar());
-        System.out.println(t6.termIsVar());
+        System.out.println(t1.isVar());
+        System.out.println(t2.isVar());
+        System.out.println(t3.isVar());
+        System.out.println(t4.isVar());
+        System.out.println(t5.isVar());
+        System.out.println(t6.isVar());
     }
     
     /** ***************************************************************
@@ -556,11 +570,11 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
 
         System.out.println("---------------------");
         System.out.println("INFO in testIsGround(): all true");
-        System.out.println(!t1.termIsGround());
-        System.out.println(t2.termIsGround());
-        System.out.println(t3.termIsGround());
-        System.out.println(!t4.termIsGround());
-        System.out.println(!t5.termIsGround());
+        System.out.println(!t1.isGround());
+        System.out.println(t2.isGround());
+        System.out.println(t3.isGround());
+        System.out.println(!t4.isGround());
+        System.out.println(!t5.isGround());
     }
 
     /** ***************************************************************
@@ -639,9 +653,9 @@ public ArrayList<Term> subterms = new ArrayList<Term>();    // empty if not comp
 
         System.out.println("---------------------");
         System.out.println("INFO in testTermWeight()");
-        System.out.println("Expected: 3 actual: " + t3.termWeight(1,1));
-        System.out.println("Expected: 6 actual: " + t3.termWeight(2,1));
-        System.out.println("Expected: 1 actual: " + t1.termWeight(2,1));
+        System.out.println("Expected: 3 actual: " + t3.weight(1,1));
+        System.out.println("Expected: 6 actual: " + t3.weight(2,1));
+        System.out.println("Expected: 1 actual: " + t1.weight(2,1));
     }
     
     /** ***************************************************************
