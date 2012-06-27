@@ -105,7 +105,7 @@ public class Signature {
 	    sig.addFun("a", 0);
 	    sig.addPred("weird", 4);
 	        
-	    System.out.println(sig);
+	    System.out.println(sig + " should be preds[wierd] and funs[mult,a]");
 	    System.out.println("all should be true:");
 	    System.out.println(sig.isPred("weird"));
 	    System.out.println(!sig.isPred("unknown"));
