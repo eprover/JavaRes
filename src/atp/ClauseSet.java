@@ -29,6 +29,7 @@ import java.text.*;
 public class ClauseSet {
 
     public ArrayList<Clause> clauses = new ArrayList<Clause>();
+    public String SZS = "";
              
     /** ***************************************************************
      * Return a string representation of the clause set.
@@ -112,21 +113,20 @@ public class ClauseSet {
     
     /** ***************************************************************
      * Add equality axioms (if necessary). 
-     * @return new clauses if equality is present, null otherwise.
+     * @return new clauses if equality is present, unmodified otherwise.
      */
     public ClauseSet addEqAxioms() {
 
     	Signature sig = new Signature();
         sig = collectSig(sig);
 
-        //System.out.println("INFO in ClauseSet.addEqAxioms(): signature: " + sig);
+        System.out.println("INFO in ClauseSet.addEqAxioms(): signature: " + sig);
         if (sig.isPred("=")) {         
             ArrayList<Clause> res = EqAxioms.generateEquivAxioms();
             res.addAll(EqAxioms.generateCompatAxioms(sig));
             this.addAll(res);
-            return this;
         }
-        return null;
+        return this;
     }
     
     /** ***************************************************************
