@@ -158,7 +158,7 @@ public class Substitutions {
                 
         //System.out.println("INFO in Substitutions.apply(): " + this + " " + term);
         Term res = new Term();
-        if (term.termIsVar()) {
+        if (term.isVar()) {
             //System.out.println("term is var");
             if (subst.containsKey(term)) {
                 //System.out.println("contains key");
