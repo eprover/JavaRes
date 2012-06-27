@@ -144,10 +144,10 @@ public class Clausifier {
         if (!flip)
             return lit;
         Literal result = lit.deepCopy();
-        if (result.op.equals(Lexer.EqualSign) && flip) 
-            result.op = Lexer.NotEqualSign;        
-        else if (result.op.equals(Lexer.NotEqualSign) && flip) 
-            result.op = Lexer.EqualSign;     
+        if (result.atom.getFunc().equals(Lexer.EqualSign) && flip) 
+            result.atom.t = Lexer.NotEqualSign;        
+        else if (result.atom.getFunc().equals(Lexer.NotEqualSign) && flip) 
+            result.atom.t = Lexer.EqualSign;     
         else 
             result.negated = !result.negated;       
         return result;
@@ -262,7 +262,7 @@ public class Clausifier {
             result.child2 = standardizeVariables(form.child2);
         if (BareFormula.isQuantifier(form.op)) {
             Substitutions subst = new Substitutions();
-            Term oldVar = form.lit1.lhs;
+            Term oldVar = form.lit1.atom;
             Term newVar = generateNewVar();
             subst.addSubst(oldVar,newVar);
             return result.substitute(subst);
@@ -434,7 +434,7 @@ public class Clausifier {
         if (form.child2 != null)
             result.child2 = skolemizationRecurse(form.child2,uList);
         if (form.op.equals("?")) { // existential
-            Term var = form.lit1.lhs;
+            Term var = form.lit1.atom;
             Term skolem = generateNewSkolem(uList);
             Substitutions subst = new Substitutions();
             subst.addSubst(var,skolem);
@@ -447,7 +447,7 @@ public class Clausifier {
             return result; 
         }
         if (form.op.equals("!")) // universal
-            uList.add(form.lit1.lhs);
+            uList.add(form.lit1.atom);
         return result;
     }   
     
@@ -628,6 +628,9 @@ public class Clausifier {
     public static ArrayList<Clause> clausify(BareFormula bf) {
     
         BareFormula result = bf.deepCopy();
+        BareFormula newresult = SmallCNFization.formulaOpSimplify(result);
+        if (newresult != null)
+        	result = newresult;
         result = removeImpEq(result);
         result = moveNegationIn(result);
         result = standardizeVariables(result);
