@@ -74,6 +74,7 @@ public class Lexer {
     public String type = "";
     public String literal = "";
     public String line = null;
+    public String SZS = "";
     public int pos = 0;  // character position on the current line
     public LineNumberReader input = null;
     public ArrayDeque<String> tokenStack = new ArrayDeque<String>();
@@ -365,6 +366,23 @@ public class Lexer {
         checkLit(litvals);
         return next();
     }
+
+    /** ***************************************************************
+     */
+    public void processComment(String line) {
+    	
+        Pattern value = Pattern.compile("\\%\\sStatus[\\s]+([^\\n]*)");
+        //Pattern value = Pattern.compile("\\%\\sStatus");
+        Matcher m = value.matcher(line);
+        //System.out.println("INFO in processComment(): comment: " + line);
+        if (m.lookingAt()) {
+        	if (m.group(1).indexOf("Unsatisfiable") > -1 || m.group().indexOf("Theorem") > -1) 
+        		SZS = m.group(1);
+        	if (m.group(1).indexOf("Satisfiable") > -1 || m.group().indexOf("CounterSatisfiable") > -1) 
+        		SZS = m.group(1);        
+        	//System.out.println("# problem SZS status: " + SZS);
+        }
+    }
     
     /** ***************************************************************
      * Return next semantically relevant token. 
@@ -374,6 +392,9 @@ public class Lexer {
         String res = nextUnfiltered();
         while ((type.equals(WhiteSpace) || type.equals(HashComment) || 
                 type.equals(PerComment)) && !res.equals(EOFToken)) {
+        	//System.out.println(type + ":" + line);
+        	if (type.equals(HashComment) || type.equals(PerComment))
+        		processComment(line);
             res = nextUnfiltered();
         }
         //System.out.println("INFO in next(): returning token: " + res);
