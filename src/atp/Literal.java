@@ -29,9 +29,7 @@ import java.util.*;
   */
 public class Literal {
     
-    public String op = "";  // = or !=
-    public Term lhs = null;  // if there's no op, then the literal is just a term, held in lhs
-    public Term rhs = null;
+    public Term atom = null;  
     boolean negated = false;
 
     /** ***************************************************************
@@ -42,7 +40,7 @@ public class Literal {
     /** ***************************************************************
      */
     public Literal(Term t) {
-        lhs = t;
+        atom = t;
     }
     
      /** ***************************************************************
@@ -52,14 +50,14 @@ public class Literal {
          StringBuffer result = new StringBuffer();
          if (negated)
              result.append("~");
-         if (!Term.emptyString(op)) {
-             if (op.equals("=") || op.equals("!="))
-                 result.append(lhs + op + rhs);
+         if (!Term.emptyString(atom.getFunc())) {
+             if (atom.getFunc().equals("=") || atom.getFunc().equals("!="))
+                 result.append(atom.getArgs().get(0) + atom.getFunc() + atom.getArgs().get(1));
              else
-                 result.append(lhs);
+                 result.append(atom);
          }
          else 
-             result.append(lhs);         
+             result.append(atom);         
          return result.toString();
      }
      
@@ -70,16 +68,16 @@ public class Literal {
          StringBuffer result = new StringBuffer();
          if (negated)
              result.append("(not ");
-         if (!Term.emptyString(op)) {
-             if (op.equals("="))
-                 result.append("(equals " + lhs.toKIFString() + " " + rhs.toKIFString() + ")");
-             else if (op.equals("!="))
-                 result.append("(not (equals " + lhs.toKIFString() + " " + rhs.toKIFString() + "))");
+         if (!Term.emptyString(atom.getFunc())) {
+             if (atom.getFunc().equals("="))
+                 result.append("(equals " + atom.getArgs().get(0).toKIFString() + " " + atom.getArgs().get(1).toKIFString() + ")");
+             else if (atom.getFunc().equals("!="))
+                 result.append("(not (equals " + atom.getArgs().get(0).toKIFString() + " " + atom.getArgs().get(1).toKIFString() + "))");
              else
-                 result.append(lhs);
+                 result.append(atom.getArgs().get(0));
          }
          else 
-             result.append(lhs.toKIFString());  
+             result.append(atom.getArgs().get(0).toKIFString());  
          if (negated)
              result.append(")");
          return result.toString();
@@ -89,21 +87,16 @@ public class Literal {
       */
      public boolean equals(Object l_obj) {
         
-         assert !l_obj.getClass().getName().equals("Literal") : "Literal.equals() passed object not of type Literal"; 
+         if (!l_obj.getClass().getName().equals("atp.Literal")) {
+         	System.out.println("# Error: Literal.equals() passed object not of type Literal:" + l_obj.getClass());
+         	Exception e = new Exception("DEBUG");
+         	e.printStackTrace();
+         }
          Literal l = (Literal) l_obj;
          if (negated != l.negated)
              return false;
-         if (!lhs.equals(l.lhs))
+         if (!atom.equals(l.atom))
              return false;
-         if (!Term.emptyString(op)) {
-             if (!op.equals(l.op))
-                 return false;
-             if (!rhs.equals(l.rhs))
-                 return false;
-         }
-         else
-             if (!Term.emptyString(l.op))
-                 return false;
          return true;
      }
      
@@ -120,11 +113,7 @@ public class Literal {
      public Literal deepCopy() {
          
          Literal result = new Literal();         
-         result.op = op;
-         if (lhs != null)
-             result.lhs = lhs.deepCopy();
-         if (rhs != null)
-             result.rhs = rhs.deepCopy();
+         result.atom = atom.deepCopy();
          result.negated = negated;  
          return result;
      }
@@ -135,22 +124,15 @@ public class Literal {
       */
      public boolean isOpposite(Literal other) {
 
-         if (Term.emptyString(op))
-             return this.isNegative() != other.isNegative() &&
-                  lhs.equals(other.lhs);
-         else {
-             return this.isNegative() != other.isNegative() &&
-                 op.equals(other.op) && 
-                 lhs.equals(other.lhs) && 
-                 rhs.equals(other.rhs);
-         }
+         return this.isNegative() != other.isNegative() &&
+              atom.equals(other.atom);
      }
      
      /** ***************************************************************
       */
      public Literal negate() {
-         negated = true;
-         return this;
+         negated = !negated;
+         return this.deepCopy();
      }
      
      /** ***************************************************************
@@ -171,7 +153,7 @@ public class Literal {
       */
      public boolean isEquational() {
       
-         return !Term.emptyString(op);
+         return atom.getFunc().equals("=");
      }
 
      /** ***************************************************************
@@ -179,7 +161,7 @@ public class Literal {
       */
      public boolean atomIsConstTrue() {
 
-         return lhs.t.equals("$true");
+         return atom.getFunc().equals("$true");
      }
      
      /** ***************************************************************
@@ -187,7 +169,7 @@ public class Literal {
       */
      public boolean atomIsConstFalse() {
 
-         return lhs.t.equals("$false");
+         return atom.getFunc().equals("$false");
      }
      
      /** ***************************************************************
@@ -213,23 +195,15 @@ public class Literal {
      /** ***************************************************************
       */
      public ArrayList<String> getConstantStrings() {
-         
-         ArrayList<String> result = new ArrayList<String>();
-         result.addAll(lhs.getConstantStrings());
-         if (rhs != null)
-             result.addAll(rhs.getConstantStrings());
-         return result;
+
+         return atom.getConstantStrings();
      }
      
      /** ***************************************************************
       */
      public ArrayList<Term> collectVars() {
          
-         ArrayList result = new ArrayList();
-         result.addAll(lhs.collectVars());
-         if (rhs != null)
-             result.addAll(rhs.collectVars());
-         return result;
+         return atom.collectVars();
      }
      
      /** ***************************************************************
@@ -237,11 +211,7 @@ public class Literal {
       */
      public ArrayList<String> collectFuns() {
 
-    	 ArrayList<String> res = new ArrayList<String>();
-         res.addAll(lhs.collectFuns());
-         if (rhs != null)
-        	 res.addAll(rhs.collectFuns());
-         return res;
+         return atom.collectFuns();
      }
      
      /** ***************************************************************
@@ -250,15 +220,7 @@ public class Literal {
       */
      public Signature collectSig(Signature sig) {
 
-    	 if (!lhs.termIsVar() && rhs == null)
-    		 sig.addPred(lhs.t,lhs.subterms.size());
-    	 for (Term t : lhs.subterms)
-    		 sig = t.collectSig(sig);
-    	 if (rhs != null) {
-    		 sig.addPred(op, 2);
-    		 sig = rhs.collectSig(sig);
-    	 }
-         return sig;
+         return atom.collectSig(sig);
      }
      
      /** ***************************************************************
@@ -268,10 +230,7 @@ public class Literal {
 
          //System.out.println("INFO in Literal.substitute(): "  + this + " " + subst);
          Literal newLit = deepCopy();
-         newLit.lhs = subst.apply(lhs);
-         if (!Term.emptyString(op))
-             newLit.rhs = subst.apply(rhs); 
-         //System.out.println("returning: " + newLit);
+         newLit.atom = subst.apply(atom);
          return newLit;
      }
      
@@ -285,15 +244,8 @@ public class Literal {
       *                  termWeight(g(a), 3, 1)   = 6
       */
      public int weight(int fweight, int vweight) {
-                 
-         int result = 0;
-         if (!Term.emptyString(op))
-             result = result + fweight;
-         if (lhs != null)
-             result = result + lhs.termWeight(fweight, vweight);
-         if (rhs != null)
-             result = result + rhs.termWeight(fweight, vweight);         
-         return result;
+                         
+         return atom.weight(fweight,vweight);
      }
      
      /** ***************************************************************
@@ -309,32 +261,20 @@ public class Literal {
                 
          //System.out.println("INFO in Literal.parseAtom(): " + lex.literal);  
          try {
-             lhs = new Term();
-             lhs.parse(lex);
-             //System.out.println("INFO in Literal.parseAtom() (2): " + lex.literal); 
-             String n = lex.look();
-             if (lex.type.equals(Lexer.EOFToken))
-                 return this;
-             if (lex.type.equals(Lexer.NotEqualSign)) {
-                 lex.next();
-                 op = "=";
-                 negated = !negated;
+             atom = new Term();
+             atom.parse(lex);
+             ArrayList<String> tokens = new ArrayList<String>();
+             tokens.add(Lexer.EqualSign); 
+             tokens.add(Lexer.NotEqualSign);
+             if (lex.testTok(tokens)) {
+                 // The literal is equational. We get the actual operator, '=' or '!=', followed by the
+                 // other side of the (in)equation
+                 String op  = lex.next();
+                 Term lhs = atom;
+                 Term rhs = new Term();
+                 rhs = rhs.parse(lex);
+                 atom = new Term(op, lhs, rhs);        
              }
-             else if (lex.type.equals(Lexer.EqualSign)) {
-                 lex.next();
-                 op = "=";
-             }
-             else if (lex.type.equals(Lexer.Implies)) {
-                 return this;
-             }
-             else
-                 return this;
-             //System.out.println("INFO in Literal.parseAtom() (3): " + lex.literal); 
-             rhs = new Term();                
-             rhs = rhs.parse(lex); 
-             //System.out.println("INFO in Literal.parseAtom() (4): " + lex.literal); 
-             //if (lex.type != Lexer.EOFToken)
-             //    lex.next();             
              return this;
          }
          catch (Exception ex) {
@@ -462,14 +402,8 @@ public class Literal {
     	 //System.out.println("Literal.match(): this: " + this + " other: " + other + " op: " + op);
          if (this.isNegative() != other.isNegative())
              return false;
-         else {
-             if (!op.equals("=") && !op.equals("!="))
-                 return subst.match(lhs, other.lhs);
-             else if (other.op.equals(op))
-                 return subst.match(lhs, other.lhs) && subst.match(rhs, other.rhs);
-             else 
-            	 return false;
-         }
+         else 
+             return subst.match(atom, other.atom);         
      }
      
      /** ***************************************************************
