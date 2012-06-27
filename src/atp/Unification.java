@@ -47,7 +47,7 @@ public class Unification {
 
         //System.out.println("INFO in Unification.mguTermList(): attempting to unify " + term1 + " and " + term2);
         Substitutions subst = new Substitutions();
-        if (term1.termIsVar()) {
+        if (term1.isVar()) {
             //System.out.println("INFO in Unification.mguTermList(): term 1 is var");
             if (!term1.t.equals(term2.t)) {
                 if (occursCheck(term1,term2))
@@ -55,7 +55,7 @@ public class Unification {
                 subst.composeBinding(term1, term2);
             }
         }
-        else if (term2.termIsVar()) {
+        else if (term2.isVar()) {
             //System.out.println("INFO in Unification.mguTermList(): term 2 is var");
             if (occursCheck(term2, term1))
                 return null;
@@ -83,7 +83,7 @@ public class Unification {
             Term t1 = l1.remove(0); // Pop the first term pair to unify off the lists            
             Term t2 = l2.remove(0); // (removes and returns the denoted elements).
             //System.out.println("INFO in Unification.mguTermList(): attempting to unify " + t1 + " and " + t2); 
-            if (t1.termIsVar()) {
+            if (t1.isVar()) {
                 if (t1.equals(t2))
                     // We could always test this upfront, but that would
                     // require an expensive check every time. 
@@ -103,7 +103,7 @@ public class Unification {
                 l2 = newBinding.applyList(l2);
                 subst.composeBinding(t1, t2);
             }
-            else if (t2.termIsVar()) {
+            else if (t2.isVar()) {
                 // Symmetric case
                 // We know that t1!=t2, so we can drop this check
                 if (occursCheck(t2, t1))
