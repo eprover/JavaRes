@@ -128,7 +128,7 @@ public class Clause {
     
     /** ***************************************************************
      * Create a string representation of the Clause's
-     * an inference rule and its supporting axioms if it was generated
+     * inference rule and its supporting axioms if it was generated
      * in inference, in TSTP format.
      */
     public String toStringTSTPJustify() {
@@ -157,6 +157,7 @@ public class Clause {
         result.append(":" + Integer.toString(depth));
         return result.toString();
     }
+    
     /** ***************************************************************
      */
     public void createName() {
