@@ -432,7 +432,7 @@ public class ProofState {
         while (S.size() > 0) {
             GraphNode n = S.removeFirst();  // looking at pointers from n->m
             count++;
-            String pointer = String.format("%05d", count);
+            String pointer = String.format("c%05d", count);
             L.put(n.name, pointer);
             for (int i = 0; i < n.pointersToNodes.size(); i++) {  // node.pointersFromNode, pointersToNode
                 String key = n.pointersToNodes.get(i);
@@ -477,13 +477,17 @@ public class ProofState {
             Clause c = proof.get(key);
             String type = "plain";
             if (c.rationale.equals("input"))
-            	type = "input";
+            	type = "axiom";
             if (c.rationale.equals("negated_conjecture"))
             	type = "negated_conjecture";
             if (c.rationale.equals("conjecture"))
             	type = "conjecture";
-            sb.append(String.format("cnf(%-5s", (c.name)) + "," + type + "," + 
+            if (c.support.size() > 0) 
+            	sb.append(String.format("cnf(%-5s", (c.name)) + "," + type + "," + 
             		Literal.literalList2String(c.literals) + "," + c.toStringTSTPJustify() + ").\n");
+            else 
+            	sb.append(String.format("cnf(%-5s", (c.name)) + "," + type + "," + 
+                		Literal.literalList2String(c.literals) + ").\n");            	
         }
         return sb.toString();
     }
