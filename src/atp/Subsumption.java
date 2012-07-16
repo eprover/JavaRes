@@ -115,26 +115,16 @@ public class Subsumption {
                     "cnf(axiom, c5, p(a)|q(f(b))|p(X)).\n";
 
         Lexer lex = new Lexer(spec);
-        try {
-            c1 = new Clause();
-            c1.parse(lex);
+            c1 = Clause.parse(lex);
             System.out.println(c1);
-            c2 = new Clause();
-            c2.parse(lex);
+            c2 = Clause.parse(lex);
             System.out.println(c2);
-            c3 = new Clause();
-            c3.parse(lex);
+            c3 = Clause.parse(lex);
             System.out.println(c3);
-            c4 = new Clause();
-            c4.parse(lex);
+            c4 = Clause.parse(lex);
             System.out.println(c4);
-            c5 = new Clause();
-            c5.parse(lex); 
+            c5 = Clause.parse(lex); 
             System.out.println(c5);
-        }
-        catch (ParseException p) {
-            System.out.println(p.getMessage());
-        }
     }
     
     /** ***************************************************************
