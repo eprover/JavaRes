@@ -45,7 +45,18 @@ public class Substitutions {
     private static int freshVarCounter = 0;
     
     /** ***************************************************************
-     * Return a print representation of the substitution.
+     */    
+    public Substitutions (Term var, Term val) {
+    	subst.put(var,val);
+    }
+    
+    /** ***************************************************************
+     */    
+    public Substitutions () {
+    	subst = new HashMap<Term,Term>();
+    }
+    
+    /** ***************************************************************
      */    
     @Override public String toString() {
 
@@ -216,14 +227,19 @@ public class Substitutions {
      */    
     public void composeBinding(Term var, Term term) {
 
+    	//System.out.println("INFO in Substitutions.composeBinding(): var,term: " + var + " " + term);
+    	//System.out.println("INFO in Substitutions.composeBinding(): initial subst: " + subst);
+    	Substitutions tempsubst = new Substitutions(var,term);
         Iterator<Term> it = subst.keySet().iterator();
         while (it.hasNext()) {
             Term key = it.next();
             Term bound = subst.get(key);
-            subst.put(key,apply(bound));
+        	//System.out.println("INFO in Substitutions.composeBinding(): key,bound: " + key + " " + bound);
+            subst.put(key,tempsubst.apply(bound));
         }
         if (!subst.containsKey(var))
-            subst.put(var,term);        
+            subst.put(var,term);   
+    	//System.out.println("INFO in Substitutions.composeBinding(): subst: " + subst);
     }
     
     /** ***************************************************************
