@@ -259,52 +259,53 @@ public class Clause {
      * @return the parsed clause.  Note also that this is the side effect 
      * on the clause instance
      */
-    public Clause parse(Lexer lex) throws ParseException {
+    public static Clause parse(Lexer lex) {
                
+    	Clause result = new Clause();
         try {
             //System.out.println("INFO in Clause.parse(): " + lex.literal);
             lex.next(); 
             //if (st.ttype == '%')
             //    return this;
             if (!lex.literal.equals("cnf"))
-                throw new Exception("\"cnf\" expected.  Instead found '" + lex.literal + "' with clause so far " + this);
+                throw new Exception("\"cnf\" expected.  Instead found '" + lex.literal + "' with clause so far " + result);
             lex.next(); 
             if (!lex.type.equals(Lexer.OpenPar))
-                throw new Exception("Open paren expected. Instead found '" + lex.literal + "' with clause so far " + this);
+                throw new Exception("Open paren expected. Instead found '" + lex.literal + "' with clause so far " + result);
             lex.next(); 
             if (lex.type == Lexer.IdentLower)
-                name = lex.literal;
+            	result.name = lex.literal;
             else {
-                System.out.println("Warning in Clause.parse(): Identifier expected.  Instead found '" + lex.literal + "' with clause so far " + this);
+                System.out.println("Warning in Clause.parse(): Identifier expected.  Instead found '" + lex.literal + "' with clause so far " + result);
                 System.out.println("Accepting non-identifier anyway.");
-                name = lex.literal;
+                result.name = lex.literal;
             }
             lex.next(); 
             if (!lex.type.equals(Lexer.Comma))
-                throw new Exception("Comma expected. Instead found '" + lex.literal + "' with clause so far " + this);
+                throw new Exception("Comma expected. Instead found '" + lex.literal + "' with clause so far " + result);
             lex.next(); 
             if (lex.type == Lexer.IdentLower) {                 
-                type = lex.literal;
+            	result.type = lex.literal;
                 //if (!type.equals("axiom") && !type.equals("negated_conjecture"))
                 //   type = "plain";
             }
             else 
-                throw new Exception("Clause type enumeration expected.  Instead found '" + lex.literal + "' with clause so far " + this);
+                throw new Exception("Clause type enumeration expected.  Instead found '" + lex.literal + "' with clause so far " + result);
             lex.next(); 
             if (!lex.type.equals(Lexer.Comma))
-                throw new Exception("Comma expected. Instead found '" + lex.literal + "' with clause so far " + this);
+                throw new Exception("Comma expected. Instead found '" + lex.literal + "' with clause so far " + result);
             String s = lex.look(); 
             //System.out.println("INFO in Clause.parse() (2): found token: " + s);
             if (s.equals(Lexer.OpenPar)) {
                 //System.out.println("INFO in Clause.parse(): found open paren at start of bare clause");
                 lex.next();
-                literals = Literal.parseLiteralList(lex);
+                result.literals = Literal.parseLiteralList(lex);
                 lex.next(); 
                 if (!lex.type.equals(Lexer.ClosePar))
-                    throw new Exception("Literal list close paren expected. Instead found '" + lex.literal + "' with clause so far " + this);
+                    throw new Exception("Literal list close paren expected. Instead found '" + lex.literal + "' with clause so far " + result);
             }
             else {
-                literals = Literal.parseLiteralList(lex);
+            	result.literals = Literal.parseLiteralList(lex);
             }
 
             lex.next();
@@ -313,31 +314,31 @@ public class Clause {
                 //System.out.println("Discarding remainder of line.");
                 while (lex.type != Lexer.FullStop && lex.type != Lexer.EOFToken)
                 	lex.next();
-                return this;
+                return result;
             }
             lex.next(); 
             if (!lex.type.equals(Lexer.FullStop))
-                throw new Exception("Period expected. Instead found '" + lex.literal + "' with clause so far " + this);
+                throw new Exception("Period expected. Instead found '" + lex.literal + "' with clause so far " + result);
             //System.out.println("INFO in Clause.parse(): completed parsing: " + this);
-            return this;
+            return result;
         }
         catch (Exception ex) {
             Prover2.errors = "input error";
             if (lex.type == Lexer.EOFToken)
-                return this;
+                return result;
             System.out.println("Error in Clause.parse(): " + ex.getMessage());
             System.out.println("Error in Term.parseTermList(): token:" + lex.literal);  
             ex.printStackTrace();
-            throw (new ParseException("input error",0));
         }
+        return null;
     }  
     
     /** ***************************************************************
      */
-    public Clause string2Clause(String s) throws ParseException {
+    public static Clause string2Clause(String s) {
     
         Lexer lex = new Lexer(s);
-        return parse(lex);
+        return Clause.parse(lex);
     }
     
     /** ***************************************************************
@@ -519,54 +520,42 @@ public class Clause {
         System.out.println("results:");
         Lexer lex = new Lexer(str1);
                 
-        try {
-            Clause c1 = new Clause();        
-            c1.parse(lex);
+            Clause c1 = Clause.parse(lex);
             assert c1.toString().equals("cnf(test1,axiom,p(a)|p(f(X))).") : 
                    "Failure. " + c1.toString() + " not equal to cnf(test1,axiom,p(a)|p(f(X))).";
             System.out.println("c1: " + c1);
             
-            Clause c2 = new Clause();
-            c2.parse(lex);
+            Clause c2 = Clause.parse(lex);
             assert c2.toString().equals("cnf(test2,axiom,(p(a)|p(f(X)))).") : 
                 "Failure. " + c2.toString() + " not equal to cnf(test2,axiom,(p(a)|p(f(X)))).";
             System.out.println("c2: " + c2);
             
-            Clause c3 = new Clause();
-            c3.parse(lex);
+            Clause c3 = Clause.parse(lex);
             assert c3.toString().equals("cnf(test3,lemma,(p(a)|~p(f(X)))).") : 
                 "Failure. " + c3.toString() + " not equal to cnf(test3,lemma,(p(a)|~p(f(X)))).";
             System.out.println("c3: " + c3);
             
-            Clause c4 = new Clause();
-            c4.parse(lex);
+            Clause c4 = Clause.parse(lex);
             assert c4.toString().equals("cnf(taut,axiom,p(a)|q(a)|~p(a)).") : 
                 "Failure. " + c4.toString() + " not equal to cnf(taut,axiom,p(a)|q(a)|~p(a)).";
             System.out.println("c4: " + c4);
             
-            Clause c5 = new Clause();
-            c5.parse(lex);
+            Clause c5 = Clause.parse(lex);
             assert c5.toString().equals("cnf(dup,axiom,p(a)|q(a)|p(a)).") : 
                 "Failure. " + c5.toString() + " not equal to cnf(dup,axiom,p(a)|q(a)|p(a)).";
             System.out.println("c5: " + c5);
       
-            Clause c6 = new Clause();
-            c6.parse(lex);
+            Clause c6 = Clause.parse(lex);
             assert c6.toString().equals("cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).") : 
                 "Failure. " + c6.toString() + " not equal to cnf(c6,axiom,(f(f(X1,X2),f(X3,g(X4,X5)))!=f(f(g(X4,X5),X3),f(X2,X1))|k(X1,X1)!=k(a,b))).";
             System.out.println("c6: " + c6);
             
-            Clause c7 = new Clause();
-            c7.parse(lex);
+            Clause c7 = Clause.parse(lex);
             assert c7.normalizeVarCopy().equals(c6.normalizeVarCopy());
             System.out.println("c6: " + c6);
             System.out.println("c6 normalized: " + c6.normalizeVarCopy());
             System.out.println("c7: " + c7);
             System.out.println("c7 normalized: " + c7.normalizeVarCopy());
-        }
-        catch (ParseException p) {
-            System.out.println(p.getMessage());
-        }
     }
     
     /** ***************************************************************
