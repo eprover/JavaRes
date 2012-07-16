@@ -166,6 +166,10 @@ public class Resolution {
     public static Clause c7 = new Clause();
     public static Clause c8 = new Clause();
     public static Clause c9 = new Clause();
+    public static Clause c10 = new Clause();
+    public static Clause c11 = new Clause();
+    public static Clause c12 = new Clause();
+    public static Clause c13 = new Clause();
     
     /** ***************************************************************
      * Setup function for resolution testing
@@ -178,36 +182,39 @@ public class Resolution {
            "cnf(c4,axiom,p(X,X)|p(a,f(Y))).\n" +
            "cnf(ftest,axiom,p(X)|~q|p(a)|~q|p(Y))."; 
        Lexer lex = new Lexer(spec);
-       try {
-	       c1.parse(lex);
-	       c2.parse(lex);
-	       c3.parse(lex);
-	       c4.parse(lex);
-	       c5.parse(lex);
-	       System.out.println("Resolution.setup(): expected clauses:");
-	       System.out.println(spec);
-	       System.out.println("actual:");
-	       System.out.println(c1);
-	       System.out.println(c2);
-	       System.out.println(c3);
-	       System.out.println(c4);
-	       System.out.println(c5); 
-	       
-	       String spec2 = "cnf(not_p,axiom,~p(a)).\n" + 
-	       "cnf(taut,axiom,p(X4)|~p(X4)).\n";
-	       lex = new Lexer(spec2);
-	       c6.parse(lex);
-	       c7.parse(lex);
-	       
-	       String spec3 = "cnf(00019,plain,disjoint(X212, null_class))." +
-	       "cnf(00020,plain,~disjoint(X271, X271)|~member(X270, X271)).";
-	       lex = new Lexer(spec3);
-	       c8.parse(lex);
-	       c9.parse(lex);
-       }
-       catch (ParseException p) {
-           System.out.println(p.getMessage());
-       }
+       c1.parse(lex);
+       c2.parse(lex);
+       c3.parse(lex);
+       c4.parse(lex);
+       c5.parse(lex);
+       System.out.println("Resolution.setup(): expected clauses:");
+       System.out.println(spec);
+       System.out.println("actual:");
+       System.out.println(c1);
+       System.out.println(c2);
+       System.out.println(c3);
+       System.out.println(c4);
+       System.out.println(c5); 
+       
+       String spec2 = "cnf(not_p,axiom,~p(a)).\n" + 
+       "cnf(taut,axiom,p(X4)|~p(X4)).\n";
+       lex = new Lexer(spec2);
+       c6.parse(lex);
+       c7.parse(lex);
+       
+       String spec3 = "cnf(00019,plain,disjoint(X212, null_class))." +
+       "cnf(00020,plain,~disjoint(X271, X271)|~member(X270, X271))." +
+       "cnf(c00025,axiom,( product(X1,X1,X1) ))." +
+       "cnf(c00030,plain, ( ~ product(X354,X355,e_1) | ~ product(X354,X355,e_2) ))." +
+       "cnf(c00001,axiom,~killed(X12, X13)|hates(X12, X13))." +
+       "cnf(c00003,axiom,~killed(X3, X4)|~richer(X3, X4)).";
+       lex = new Lexer(spec3);
+       c8.parse(lex);
+       c9.parse(lex);
+       c10.parse(lex);
+       c11.parse(lex);
+       c12.parse(lex);
+       c13.parse(lex);
     }
     
     /** ***************************************************************
@@ -240,6 +247,14 @@ public class Resolution {
         Clause res6 = resolution(c8, 0, c9,0);
         assert res6 != null;
         System.out.println("Resolution.testResolution(): ~member(X270, null_class) successful result: " + res6);
+        
+        Clause res7 = resolution(c10, 0, c11,0);
+        assert res7 != null;
+        System.out.println("Resolution.testResolution(): ~product(e_1,e_1,e_2) successful result: " + res7);
+        
+        Clause res8 = resolution(c12, 0, c13,0);
+        assert res8 != null;
+        System.out.println("Resolution.testResolution(): successful null result: " + res8);
     }
     
     /** ***************************************************************
