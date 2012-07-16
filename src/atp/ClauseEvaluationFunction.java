@@ -144,19 +144,14 @@ public abstract class ClauseEvaluationFunction {
                "cnf(c8,axiom,(c=d|h(i(a))!=h(i(e)))).\n";
         
         Lexer lex = new Lexer(spec); 
-        try {
-            c1.parse(lex);
-            c2.parse(lex);
-            c3.parse(lex);
-            c4.parse(lex);
-            c5.parse(lex);
-            c6.parse(lex);
-            c7.parse(lex);
-            c8.parse(lex);
-        }
-        catch (ParseException p) {
-            System.out.println(p.getMessage());
-        }
+        c1.parse(lex);
+        c2.parse(lex);
+        c3.parse(lex);
+        c4.parse(lex);
+        c5.parse(lex);
+        c6.parse(lex);
+        c7.parse(lex);
+        c8.parse(lex);
     }
     
     /** ***************************************************************
