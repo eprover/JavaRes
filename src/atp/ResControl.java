@@ -91,17 +91,12 @@ public class ResControl {
             "cnf(c3, axiom, c).";
    
         Lexer lex = new Lexer(spec);
-        try {
-            conj.parse(lex);
-            cset.parse(lex);
-    
-            String cstr = "cnf(ftest, axiom, p(X)|~q|p(a)|~q|p(Y)).";
-            lex = new Lexer(cstr);
-            fclause.parse(lex);
-        }
-        catch (ParseException p) {
-            System.out.println(p.getMessage());
-        }
+        conj.parse(lex);
+        cset.parse(lex);
+
+        String cstr = "cnf(ftest, axiom, p(X)|~q|p(a)|~q|p(Y)).";
+        lex = new Lexer(cstr);
+        fclause.parse(lex);
     }
            
     /** ***************************************************************
