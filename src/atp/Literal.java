@@ -220,7 +220,10 @@ public class Literal {
       */
      public Signature collectSig(Signature sig) {
 
-         return atom.collectSig(sig);
+         sig.addPred(atom.getFunc(), atom.subterms.size());
+         for (int i = 0; i < atom.subterms.size(); i++)
+             atom.subterms.get(i).collectSig(sig);            
+         return sig;
      }
      
      /** ***************************************************************
