@@ -43,35 +43,10 @@ public class Unification {
      * Unify all terms in term1 with the corresponding terms in term2 with a
      * common substitution variable "subst".   
      */
-    private static Substitutions mguTermList(Term term1, Term term2) {
+    private static Substitutions mguTermList(ArrayList<Term> l1, ArrayList<Term> l2) {
 
         //System.out.println("INFO in Unification.mguTermList(): attempting to unify " + term1 + " and " + term2);
         Substitutions subst = new Substitutions();
-        if (term1.isVar()) {
-            //System.out.println("INFO in Unification.mguTermList(): term 1 is var");
-            if (!term1.t.equals(term2.t)) {
-                if (occursCheck(term1,term2))
-                    return null;
-                subst.composeBinding(term1, term2);
-            }
-        }
-        else if (term2.isVar()) {
-            //System.out.println("INFO in Unification.mguTermList(): term 2 is var");
-            if (occursCheck(term2, term1))
-                return null;
-            subst.composeBinding(term2, term1);
-        }
-        else {
-            //System.out.println("INFO in Unification.mguTermList(): predicate position both are constants: " + term1.t + " " + term2.t);
-            if (!term1.t.equals(term2.t))
-                return null;            
-        }
-        //System.out.println("INFO in Unification.mguTermList(): subst so far: " + subst);
-        
-        ArrayList<Term> l1 = new ArrayList<Term>();
-        l1.addAll(term1.subterms);
-        ArrayList<Term> l2 = new ArrayList<Term>();
-        l2.addAll(term2.subterms);
         
         if (l1.size() != l2.size()) {
             if (subst.subst.keySet().size() > 0)
@@ -137,7 +112,11 @@ public class Unification {
      */
     public static Substitutions mgu(Term t1, Term t2) {
 
-        return mguTermList(t1, t2);
+    	ArrayList<Term> l1 = new ArrayList<Term>();
+    	l1.add(t1);
+    	ArrayList<Term> l2 = new ArrayList<Term>();
+    	l2.add(t2);
+        return mguTermList(l1, l2);
     }
 
     /** ***************************************************************
